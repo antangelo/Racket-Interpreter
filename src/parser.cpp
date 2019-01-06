@@ -30,7 +30,9 @@ namespace Expressions
             std::unique_ptr<Expressions::Expression> expr;
             auto parseSuccessful = Parser::parse(str, expr);
 
-            if (!parseSuccessful) throw std::invalid_argument; //TODO: Write exception for syntax errors/unsuccessful parsing.
+            if (!parseSuccessful)
+                throw std::invalid_argument(
+                        "Parsing failed"); //TODO: Write exception for syntax errors/unsuccessful parsing.
 
             if (auto partialExpression = dynamic_cast<PartialExpression *>(expr.get()))
             {
