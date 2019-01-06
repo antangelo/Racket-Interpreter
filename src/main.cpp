@@ -16,12 +16,11 @@ int main(int argc, char *argv[])
         if (input == "(exit)") break;
         else
         {
-            auto expr = Parser::parse(input);
+            std::unique_ptr<Expressions::Expression> expr;
+            auto parseSuccess = Parser::parse(input, expr);
+            auto exprPtr = expr.get();
 
-            for(auto& i : expr)
-            {
-                std::cout << i << std::endl;
-            }
+            if (parseSuccess) std::cout << *(exprPtr->evaluate(&expr)) << std::endl;
         }
     }
 
