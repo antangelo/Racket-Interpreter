@@ -1,11 +1,14 @@
 #include <iostream>
 
 #include "parser.h"
+#include "functions.h"
 
 int main(int argc, char *argv[])
 {
     std::cout << "Racket Interpreter Alpha 1" << std::endl;
     std::cout << "Run '(exit)' to exit." << std::endl;
+
+    Functions::registerFunctions();
 
     for (;;)
     {
@@ -19,8 +22,21 @@ int main(int argc, char *argv[])
             std::unique_ptr<Expressions::Expression> expr;
             auto parseSuccess = Parser::parse(input, expr);
             auto exprPtr = expr.get();
+            int steps = 0;
 
-            if (parseSuccess) std::cout << *(exprPtr->evaluate(&expr)) << std::endl;
+            while (!exprPtr->isValue())
+            {
+                if (steps >= 100) break;
+
+                std::cout << "Step " << steps++ << std::endl;
+                std::cout << *exprPtr << std::endl;
+
+                expr = exprPtr->evaluate(&expr);
+                exprPtr = expr.get();
+            }
+
+            std::cout << "Step " << steps << std::endl;
+            std::cout << *exprPtr << std::endl;
         }
     }
 
