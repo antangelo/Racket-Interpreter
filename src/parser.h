@@ -13,6 +13,10 @@
 
 namespace Parser
 {
+    std::vector<std::string> parseTuple(std::string);
+
+    void replaceInScope(std::string &, std::string, std::string);
+
     bool parse(std::string, std::unique_ptr<Expressions::Expression> &);
 }
 

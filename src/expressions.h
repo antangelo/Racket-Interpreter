@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <string>
-#include <list>
 #include <vector>
 #include <functional>
 
@@ -39,7 +38,7 @@ namespace Expressions
     class PartialExpression : public Expression
     {
     public:
-        std::list<std::string> mTupleMembers;
+        std::vector<std::string> mTupleMembers;
 
         bool isValue() override;
 
@@ -47,7 +46,7 @@ namespace Expressions
 
         std::string toString() const override;
 
-        explicit PartialExpression(std::list<std::string> tuple)
+        explicit PartialExpression(std::vector<std::string> tuple)
         {
             mTupleMembers = std::move(tuple);
         }
@@ -79,7 +78,7 @@ namespace Expressions
 
         std::string toString() const override;
 
-        std::unique_ptr<Expression> call(expression_vector args);
+        virtual std::unique_ptr<Expression> call(expression_vector args);
 
         explicit FunctionExpression(std::string funcName,
                                     std::function<std::unique_ptr<Expression>(expression_vector)> &func)
@@ -88,9 +87,41 @@ namespace Expressions
             mFunction = func;
         }
 
-    private:
+    protected:
+        explicit FunctionExpression() = default;
         std::string mFuncName;
         std::function<std::unique_ptr<Expression>(expression_vector)> mFunction;
+    };
+
+    class LambdaExpression : public FunctionExpression
+    {
+    public:
+        std::unique_ptr<Expression> call(expression_vector args) override;
+
+        /* lambda_expr should have "lambda" at front(), but it should have the arg tuple */
+        explicit LambdaExpression(std::vector<std::string> lambda_expr, std::vector<std::string> lambda_args)
+        {
+            if (lambda_expr.size() < 3)
+                throw std::invalid_argument("Lambda requires two params"); //TODO: more descriptive
+
+            mFuncName = "(lambda ";
+
+            for (int i = 1; i < lambda_expr.size(); i++)
+            {
+                mFuncName += lambda_expr[i];
+
+                if (i < lambda_expr.size() - 1) mFuncName += " ";
+            }
+
+            mFuncName += ")";
+
+            mLambdaArgs = std::move(lambda_args);
+            mLambdaExpr = std::move(lambda_expr);
+        }
+
+    protected:
+        std::vector<std::string> mLambdaArgs;
+        std::vector<std::string> mLambdaExpr;
     };
 
     class NumericalValueExpression : public Expression // TODO: Implement non-numerical values.
@@ -108,6 +139,16 @@ namespace Expressions
         {
             mValue = value;
         }
+    };
+
+    class VoidValueExpression : public Expression
+    {
+    public:
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) override;
+
+        std::string toString() const override;
     };
 }
 

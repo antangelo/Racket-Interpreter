@@ -93,6 +93,36 @@ namespace Functions
                 return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(quotient));
             } else throw std::invalid_argument("/ expects numerical arg, found: " + expr.front()->toString());
         };
+
+        funcMap["display"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        {
+            if (expr.empty()) throw std::invalid_argument("display expects at least 1 arg.");
+
+            std::cout << *expr.front();
+
+            return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression());
+        };
+
+        funcMap["newline"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        {
+            if (!expr.empty()) throw std::invalid_argument("newline expects no args");
+
+            std::cout << std::endl;
+
+            return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression());
+        };
+
+        funcMap["begin"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        {
+            if (expr.empty()) throw std::invalid_argument("begin expects at least 1 arg.");
+
+            for (int i = 0; i < expr.size() - 1; i++)
+            {
+                expr[i]->evaluate(&expr[i]);
+            }
+
+            return expr.back()->evaluate(&expr.back());
+        };
     }
 
     std::unique_ptr<Expressions::Expression> getFuncByName(std::string name)

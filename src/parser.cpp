@@ -36,19 +36,19 @@ namespace Parser
      * @param str A string where the first character is '('
      * @return
      */
-    std::list<std::string> parseTuple(std::string str)
+    std::vector<std::string> parseTuple(std::string str)
     {
         /* Remove the opening parenthesis with erase */
-        if (str[0] == '(') str.erase(0, 1);
+        if (str[0] == '(' || str[0] == '[') str.erase(0, 1);
 
         //std::string expr1 = str.substr(0, str.find(')'));
-        std::list<std::string> tupleElements;
+        std::vector<std::string> tupleElements;
 
         /* Tokenize */
         size_t index = 0;
         while ((index = str.find(' ')) != std::string::npos)
         {
-            if (str[0] == '(')
+            if (str[0] == '(' || str[0] == '[')
             {
                 /* findTupleEnd produces the index of the ending ')', need to add
                  * one since substr is exclusive on the ending boundary. */
@@ -66,15 +66,55 @@ namespace Parser
         return tupleElements;
     }
 
+    /**
+     * Replaces instances of key in str with rpl within key's scope.
+     * @param str The string to replace keys, should be a tuple
+     * @param key The key to replace
+     * @param rpl The string to replace key with
+     */
+    void replaceInScope(std::string &str, std::string key, std::string rpl)
+    {
+        if (str == key)
+        {
+            str = rpl;
+            return;
+        }
+
+        if (str[0] != '(')
+        {
+            return;
+        }
+
+        std::vector<std::string> tuple = parseTuple(str);
+        std::string out = "(";
+
+        for (int i = 0; i < tuple.size(); i++)
+        {
+            auto s = tuple[i];
+
+            if (s == key) out += rpl;
+            else if (s.front() == '(')
+            {
+                replaceInScope(s, key, rpl);
+                out += s;
+            } else out += s;
+
+            if (i < tuple.size() - 1) out += " ";
+        }
+
+        out += ")";
+        str = out;
+    }
+
     bool parse(std::string str, std::unique_ptr<Expressions::Expression> &out)
     {
-        if (str.front() == '('
+        if ((str.front() == '(' || str.front() == '[')
             && findTupleEnd(str) != std::string::npos)
         {
             std::unique_ptr<Expressions::Expression> expr(new Expressions::PartialExpression(parseTuple(str)));
             out = std::move(expr);
             return true;
-        } else if (Functions::funcMap.count(str) > 0) //TODO: Fix for map of functions.
+        } else if (Functions::funcMap.count(str) > 0)
         {
             out = Functions::getFuncByName(str);
             return true;
@@ -89,10 +129,9 @@ namespace Parser
             }
             catch (std::invalid_argument &exception)
             {
-                std::cout << exception.what() << std::endl;
+                //std::cout << exception.what() << std::endl;
+                throw;
             }
-
-            return false;
         }
     }
 }
