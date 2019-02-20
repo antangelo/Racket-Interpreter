@@ -9,6 +9,35 @@
 
 namespace Parser
 {
+    //
+
+    bool Scope::contains(const std::string &token)
+    {
+        return definitions.find(token) != definitions.end()
+               || (mParent != nullptr && mParent->contains(token));
+    }
+
+    void Scope::define(std::string key, std::unique_ptr<Expressions::Expression> val)
+    {
+        definitions[key] = std::move(val);
+    }
+
+    std::unique_ptr<Expressions::Expression> Scope::getDefinition(const std::string &key)
+    {
+        if (definitions.find(key) != definitions.end())
+        {
+            // Don't want to give the definition itself, only a copy of it
+            return definitions[key]->clone();
+        }
+        else if (mParent != nullptr && mParent->contains(key))
+        {
+            return mParent->getDefinition(key);
+        }
+        else throw std::invalid_argument("Key " + key + " not found in scope."); //TODO: replace invalid_argument
+    }
+
+    //
+
     /**
     * Gives the ending index of the first occurring tuple in the given string
     * @param tuple A string where the first character is a '(' and containing a closing ')' somewhere.
@@ -97,7 +126,8 @@ namespace Parser
             {
                 replaceInScope(s, key, rpl);
                 out += s;
-            } else out += s;
+            }
+            else out += s;
 
             if (i < tuple.size() - 1) out += " ";
         }
@@ -106,7 +136,7 @@ namespace Parser
         str = out;
     }
 
-    bool parse(std::string str, std::unique_ptr<Expressions::Expression> &out)
+    bool parse(std::string str, Scope *scope, std::unique_ptr<Expressions::Expression> &out)
     {
         if ((str.front() == '(' || str.front() == '[')
             && findTupleEnd(str) != std::string::npos)
@@ -114,11 +144,18 @@ namespace Parser
             std::unique_ptr<Expressions::Expression> expr(new Expressions::PartialExpression(parseTuple(str)));
             out = std::move(expr);
             return true;
-        } else if (Functions::funcMap.count(str) > 0)
+        }
+        else if (scope != nullptr && scope->contains(str))
+        {
+            out = scope->getDefinition(str);
+            return true;
+        }
+        else if (Functions::funcMap.count(str) > 0)
         {
             out = Functions::getFuncByName(str);
             return true;
-        } else
+        }
+        else
         {
             try
             {

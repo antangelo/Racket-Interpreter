@@ -19,7 +19,7 @@ namespace Expressions
         return false;
     }
 
-    std::unique_ptr<Expression> PartialExpression::evaluate(std::unique_ptr<Expression> *obj_ref)
+    std::unique_ptr<Expression> PartialExpression::evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope)
     {
         Expressions::expression_vector members;
 
@@ -33,7 +33,7 @@ namespace Expressions
         for (const auto &str : mTupleMembers)
         {
             std::unique_ptr<Expressions::Expression> expr;
-            auto parseSuccessful = Parser::parse(str, expr);
+            auto parseSuccessful = Parser::parse(str, scope, expr);
 
             if (!parseSuccessful)
                 throw std::invalid_argument(
@@ -43,7 +43,7 @@ namespace Expressions
             {
                 // Not the best, but obj_ref isn't used by evaluate() so it ends up saving
                 // unnecessary pointer creation with a PartialExpression here.
-                members.push_back(std::move(partialExpression->evaluate(obj_ref)));
+                members.push_back(std::move(partialExpression->evaluate(obj_ref, scope)));
             } else
             {
                 members.push_back(std::move(expr));
@@ -66,6 +66,11 @@ namespace Expressions
         return str.substr(0, str.size() - 1) + ")";
     }
 
+    std::unique_ptr<Expression> PartialExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new PartialExpression(*this));
+    }
+
     /* TupleExpression */
 
     bool TupleExpression::isValue()
@@ -73,13 +78,13 @@ namespace Expressions
         return false; // for now, will change in the future.
     }
 
-    std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> *obj_ref)
+    std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope)
     {
         for (auto &expr : mTupleMembers)
         {
             if (!expr->isValue())
             {
-                expr = expr->evaluate(&expr);
+                expr = expr->evaluate(&expr, scope);
                 return std::move(*obj_ref);
             }
         }
@@ -89,7 +94,7 @@ namespace Expressions
             // Need a new pointer in this scope to stop the function from dying when the first element is released.
             auto f = std::unique_ptr<Expression>(mTupleMembers.front().release());
             mTupleMembers.erase(mTupleMembers.begin());
-            return func->call(std::move(mTupleMembers));
+            return func->call(std::move(mTupleMembers), scope);
         }
 
         return std::move(*obj_ref);
@@ -107,13 +112,19 @@ namespace Expressions
         return str.substr(0, str.size() - 1) + ")";
     }
 
+    std::unique_ptr<Expression> TupleExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new TupleExpression(*this));
+    }
+
     /* FunctionExpression */
     inline bool FunctionExpression::isValue()
     {
         return true;
     }
 
-    inline std::unique_ptr<Expression> FunctionExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref)
+    inline std::unique_ptr<Expression>
+    FunctionExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref, Parser::Scope *scope)
     {
         return std::move(*obj_ref);
     }
@@ -123,39 +134,45 @@ namespace Expressions
         return mFuncName;
     }
 
-    std::unique_ptr<Expression> FunctionExpression::call(Expressions::expression_vector args)
+    std::unique_ptr<Expression> FunctionExpression::call(Expressions::expression_vector args, Parser::Scope *scope)
     {
-        return mFunction(std::move(args));
+        return mFunction(std::move(args), scope);
+    }
+
+    std::unique_ptr<Expression> FunctionExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new FunctionExpression(*this));
     }
 
     /* LambdaExpression */
 
-    std::unique_ptr<Expression> LambdaExpression::call(Expressions::expression_vector args)
+    std::unique_ptr<Expression> LambdaExpression::call(Expressions::expression_vector args, Parser::Scope *scope)
     {
-        if (mLambdaArgs.size() != args.size()) throw std::invalid_argument("Lambda arg # mismatch"); //TODO
+        if (mLambdaArgs.size() != args.size()) throw std::invalid_argument("Lambda arg parity mismatch");
         std::string toParser;
 
-        for (int i = 0; i < args.size(); i++)
+        Parser::Scope fnScope(scope);
+
+        for (int i = 0; i < args.size(); ++i)
         {
-            for (int j = 2; j < mLambdaExpr.size(); j++) // Start at 2 to skip lambda and params
-            {
-                Parser::replaceInScope(mLambdaExpr[j], mLambdaArgs[i], args[i]->toString());
-            }
+            /** Move all arguments into the function's scope */
+            fnScope.define(mLambdaArgs[i], std::move(args[i]));
         }
 
-        for (int i = 2; i < mLambdaExpr.size(); i++)
+        for (int i = 2; i < mLambdaExpr.size(); ++i)
         {
             toParser += mLambdaExpr[i];
         }
 
         std::unique_ptr<Expression> expr;
-        bool success = Parser::parse(toParser, expr);
+        bool success = Parser::parse(toParser, &fnScope, expr);
 
         if (!success) throw std::invalid_argument("Parsing failed in lambda: " + toString());
 
         if (auto pex = dynamic_cast<PartialExpression *>(expr.get()))
         {
-            expr = pex->evaluate(nullptr);
+            // Evaluate the resulting partial expression in the scope of the function.
+            expr = pex->evaluate(nullptr, &fnScope);
         }
 
         return expr;
@@ -168,7 +185,8 @@ namespace Expressions
         return true;
     }
 
-    std::unique_ptr<Expression> NumericalValueExpression::evaluate(std::unique_ptr<Expression> *obj_ref)
+    std::unique_ptr<Expression>
+    NumericalValueExpression::evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope)
     {
         return std::move(*obj_ref);
     }
@@ -178,6 +196,11 @@ namespace Expressions
         return std::to_string(mValue);
     }
 
+    std::unique_ptr<Expression> NumericalValueExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new NumericalValueExpression(*this));
+    }
+
     /* VoidValueExpression */
 
     bool VoidValueExpression::isValue()
@@ -185,7 +208,8 @@ namespace Expressions
         return true;
     }
 
-    std::unique_ptr<Expression> VoidValueExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref)
+    std::unique_ptr<Expression>
+    VoidValueExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref, Parser::Scope *scope)
     {
         return std::move(*obj_ref);
     }
@@ -193,5 +217,10 @@ namespace Expressions
     std::string VoidValueExpression::toString() const
     {
         return "#:<void>";
+    }
+
+    std::unique_ptr<Expression> VoidValueExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new VoidValueExpression());
     }
 }

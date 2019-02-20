@@ -3,14 +3,16 @@
 //
 
 #include "functions.h"
+#include "parser.h"
 
 namespace Functions
 {
-    std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector)>> funcMap;
+    std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
+                                                                                 Parser::Scope *)>> funcMap;
 
     void registerFunctions()
     {
-        funcMap["+"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["+"] = [](expression_vector expr, Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
         {
             double sum = 0;
 
@@ -25,7 +27,7 @@ namespace Functions
             return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(sum));
         };
 
-        funcMap["*"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["*"] = [](expression_vector expr, Parser::Scope *) -> std::unique_ptr<Expressions::Expression>
         {
             double product = 1;
 
@@ -40,7 +42,7 @@ namespace Functions
             return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(product));
         };
 
-        funcMap["-"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["-"] = [](expression_vector expr, Parser::Scope *) -> std::unique_ptr<Expressions::Expression>
         {
             if (expr.empty()) throw std::invalid_argument("- expected at least 1 arg.");
 
@@ -67,7 +69,7 @@ namespace Functions
             } else throw std::invalid_argument("- expects numerical arg, found: " + expr.front()->toString());
         };
 
-        funcMap["/"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["/"] = [](expression_vector expr, Parser::Scope *) -> std::unique_ptr<Expressions::Expression>
         {
             if (expr.empty()) throw std::invalid_argument("/ expected at least 1 arg.");
 
@@ -94,7 +96,7 @@ namespace Functions
             } else throw std::invalid_argument("/ expects numerical arg, found: " + expr.front()->toString());
         };
 
-        funcMap["display"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["display"] = [](expression_vector expr, Parser::Scope *) -> std::unique_ptr<Expressions::Expression>
         {
             if (expr.empty()) throw std::invalid_argument("display expects at least 1 arg.");
 
@@ -103,7 +105,7 @@ namespace Functions
             return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression());
         };
 
-        funcMap["newline"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["newline"] = [](expression_vector expr, Parser::Scope *) -> std::unique_ptr<Expressions::Expression>
         {
             if (!expr.empty()) throw std::invalid_argument("newline expects no args");
 
@@ -112,16 +114,16 @@ namespace Functions
             return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression());
         };
 
-        funcMap["begin"] = [](expression_vector expr) -> std::unique_ptr<Expressions::Expression>
+        funcMap["begin"] = [](expression_vector expr, Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
         {
             if (expr.empty()) throw std::invalid_argument("begin expects at least 1 arg.");
 
             for (int i = 0; i < expr.size() - 1; i++)
             {
-                expr[i]->evaluate(&expr[i]);
+                expr[i]->evaluate(&expr[i], scope);
             }
 
-            return expr.back()->evaluate(&expr.back());
+            return expr.back()->evaluate(&expr.back(), scope);
         };
     }
 

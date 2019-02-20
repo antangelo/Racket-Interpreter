@@ -10,6 +10,11 @@
 #include <vector>
 #include <functional>
 
+namespace Parser
+{
+    class Scope;
+}
+
 namespace Expressions
 {
     class Expression
@@ -21,9 +26,11 @@ namespace Expressions
 
         /* Should evaluate the expression and produce an equivalent expression that is
          * one step closer to being a value. If the expression is a value, should produce itself. */
-        virtual std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) = 0;
+        virtual std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) = 0;
 
         virtual std::string toString() const = 0;
+
+        virtual std::unique_ptr<Expression> clone() = 0;
 
         friend std::ostream &operator<<(std::ostream &stream, const Expression &expr);
 
@@ -42,13 +49,21 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
 
         explicit PartialExpression(std::vector<std::string> tuple)
         {
             mTupleMembers = std::move(tuple);
+        }
+
+    private:
+        PartialExpression(const PartialExpression &old_expr)
+        {
+            this->mTupleMembers = std::vector<std::string>(old_expr.mTupleMembers);
         }
     };
 
@@ -59,13 +74,24 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
 
         explicit TupleExpression(expression_vector tuple)
         {
             mTupleMembers = std::move(tuple); //TODO: Re-implement to avoid double move call
+        }
+
+    private:
+        TupleExpression(const TupleExpression &old_expr)
+        {
+            for (auto &exp : old_expr.mTupleMembers)
+            {
+                this->mTupleMembers.push_back(exp->clone());
+            }
         }
     };
 
@@ -74,14 +100,17 @@ namespace Expressions
     public:
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
-        virtual std::unique_ptr<Expression> call(expression_vector args);
+        std::unique_ptr<Expression> clone() override;
+
+        virtual std::unique_ptr<Expression> call(expression_vector args, Parser::Scope *scope);
 
         explicit FunctionExpression(std::string funcName,
-                                    std::function<std::unique_ptr<Expression>(expression_vector)> &func)
+                                    std::function<std::unique_ptr<Expression>(expression_vector,
+                                                                              Parser::Scope *)> &func)
         {
             mFuncName = std::move(funcName);
             mFunction = func;
@@ -90,13 +119,19 @@ namespace Expressions
     protected:
         explicit FunctionExpression() = default;
         std::string mFuncName;
-        std::function<std::unique_ptr<Expression>(expression_vector)> mFunction;
+        std::function<std::unique_ptr<Expression>(expression_vector, Parser::Scope *)> mFunction;
+
+    private:
+        FunctionExpression(const FunctionExpression &old_expr)
+        {
+            this->mFuncName = old_expr.mFuncName;
+        }
     };
 
     class LambdaExpression : public FunctionExpression
     {
     public:
-        std::unique_ptr<Expression> call(expression_vector args) override;
+        std::unique_ptr<Expression> call(expression_vector args, Parser::Scope *scope) override;
 
         /* lambda_expr should have "lambda" at front(), but it should have the arg tuple */
         explicit LambdaExpression(std::vector<std::string> lambda_expr, std::vector<std::string> lambda_args)
@@ -131,13 +166,21 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
 
         explicit NumericalValueExpression(double value)
         {
             mValue = value;
+        }
+
+    private:
+        NumericalValueExpression(const NumericalValueExpression &old_expr)
+        {
+            this->mValue = old_expr.mValue;
         }
     };
 
@@ -146,9 +189,11 @@ namespace Expressions
     public:
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
     };
 }
 

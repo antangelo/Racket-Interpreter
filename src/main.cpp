@@ -11,11 +11,12 @@ int main(int argc, char *argv[])
     Functions::registerFunctions();
     bool hideSteps = true;
 
+    std::unique_ptr<Parser::Scope> globalScope(new Parser::Scope());
+
     for (;;)
     {
         try
         {
-
             std::cout << "> ";
             std::string input;
             std::getline(std::cin, input);
@@ -25,7 +26,7 @@ int main(int argc, char *argv[])
             else
             {
                 std::unique_ptr<Expressions::Expression> expr;
-                auto parseSuccess = Parser::parse(input, expr);
+                auto parseSuccess = Parser::parse(input, globalScope.get(), expr);
 
                 if (!parseSuccess)
                 {
@@ -40,7 +41,7 @@ int main(int argc, char *argv[])
                 {
                     if (steps >= 100) break;
 
-                    expr = exprPtr->evaluate(&expr);
+                    expr = exprPtr->evaluate(&expr, globalScope.get());
                     exprPtr = expr.get();
 
                     if (dynamic_cast<Expressions::VoidValueExpression *>(exprPtr))

@@ -13,7 +13,8 @@ namespace Functions
 {
     using Expressions::expression_vector;
 
-    extern std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector)>> funcMap;
+    extern std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
+                                                                                        Parser::Scope *)>> funcMap;
 
     void registerFunctions();
 
