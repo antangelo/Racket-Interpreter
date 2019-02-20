@@ -44,6 +44,8 @@ namespace Parser
 
     void replaceInScope(std::string &, std::string, std::string);
 
+    void parseSpecialForm(std::string, Scope *, std::unique_ptr<Expressions::Expression> &);
+
     bool parse(std::string, Scope *, std::unique_ptr<Expressions::Expression> &);
 }
 

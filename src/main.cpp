@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
         }
         catch (std::exception &exception)
         {
-            std::cout << "Exception occurred: " << exception.what() << std::endl;
+            //std::cout << "Exception occurred: " << exception.what() << std::endl;
+            throw;
         }
     }
 

@@ -3,6 +3,7 @@
 //
 
 #include "parser.h"
+#include "functions.h"
 
 namespace Expressions
 {
@@ -12,9 +13,38 @@ namespace Expressions
         return stream;
     }
 
+    /* UnparsedExpression */
+
+    bool UnparsedExpression::isValue()
+    {
+        return true;
+    }
+
+    std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref,
+                                                             Parser::Scope *scope)
+    {
+        std::unique_ptr<Expression> expr;
+
+        bool b = Parser::parse(mContents, scope, expr);
+
+        if (!b) throw std::invalid_argument("Parsing failed in expression: " + mContents);
+
+        return std::move(expr);
+    }
+
+    std::string UnparsedExpression::toString() const
+    {
+        return mContents;
+    }
+
+    std::unique_ptr<Expression> UnparsedExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new UnparsedExpression(*this));
+    }
+
     /* PartialExpression */
 
-    inline bool PartialExpression::isValue()
+    bool PartialExpression::isValue()
     {
         return false;
     }
@@ -25,9 +55,26 @@ namespace Expressions
 
         if (mTupleMembers.front() == "lambda")
         {
+            /** This parses the tuple containing the parameters of the lambda */
             std::vector<std::string> params = Parser::parseTuple(mTupleMembers.at(1));
 
             return std::unique_ptr<Expression>(new LambdaExpression(mTupleMembers, params));
+        }
+        else if (Functions::specialFormMap.find(mTupleMembers.front()) != Functions::specialFormMap.end())
+        {
+            /** We want to give the special form an unevaluated TupleExpression */
+
+            for (const auto &str : mTupleMembers)
+            {
+                std::unique_ptr<Expressions::Expression> expr;
+                Parser::parseSpecialForm(str, scope, expr);
+
+                members.push_back(std::move(expr));
+            }
+
+            // std::make_unique doesn't work here since it calls TupleExpression's copy constructor for some reason
+            std::unique_ptr<TupleExpression> expr(new TupleExpression(std::move(members)));
+            return expr;
         }
 
         for (const auto &str : mTupleMembers)
@@ -94,6 +141,7 @@ namespace Expressions
             // Need a new pointer in this scope to stop the function from dying when the first element is released.
             auto f = std::unique_ptr<Expression>(mTupleMembers.front().release());
             mTupleMembers.erase(mTupleMembers.begin());
+
             return func->call(std::move(mTupleMembers), scope);
         }
 
@@ -132,6 +180,11 @@ namespace Expressions
     std::string FunctionExpression::toString() const
     {
         return mFuncName;
+    }
+
+    bool FunctionExpression::isSpecialForm()
+    {
+        return mSpecialForm;
     }
 
     std::unique_ptr<Expression> FunctionExpression::call(Expressions::expression_vector args, Parser::Scope *scope)
@@ -176,6 +229,11 @@ namespace Expressions
         }
 
         return expr;
+    }
+
+    std::unique_ptr<Expression> LambdaExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new LambdaExpression(*this));
     }
 
     /* NumericalValueExpression */

@@ -42,6 +42,31 @@ namespace Expressions
 
     typedef std::vector<std::unique_ptr<Expression>> expression_vector;
 
+    class UnparsedExpression : public Expression
+    {
+    public:
+        std::string mContents;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit UnparsedExpression(std::string contents)
+        {
+            this->mContents = std::move(contents);
+        }
+
+    private:
+        UnparsedExpression(const UnparsedExpression &old_expr)
+        {
+            this->mContents = old_expr.mContents;
+        }
+    };
+
     class PartialExpression : public Expression
     {
     public:
@@ -106,6 +131,8 @@ namespace Expressions
 
         std::unique_ptr<Expression> clone() override;
 
+        bool isSpecialForm();
+
         virtual std::unique_ptr<Expression> call(expression_vector args, Parser::Scope *scope);
 
         explicit FunctionExpression(std::string funcName,
@@ -118,6 +145,8 @@ namespace Expressions
 
     protected:
         explicit FunctionExpression() = default;
+
+        bool mSpecialForm = false;
         std::string mFuncName;
         std::function<std::unique_ptr<Expression>(expression_vector, Parser::Scope *)> mFunction;
 
@@ -125,6 +154,19 @@ namespace Expressions
         FunctionExpression(const FunctionExpression &old_expr)
         {
             this->mFuncName = old_expr.mFuncName;
+            this->mFunction = old_expr.mFunction;
+        }
+    };
+
+    class SpecialFormExpression : public FunctionExpression
+    {
+    public:
+        explicit SpecialFormExpression(std::string funcName,
+                                       std::function<std::unique_ptr<Expression>(expression_vector,
+                                                                                 Parser::Scope *)> &func)
+                : FunctionExpression(std::move(funcName), func)
+        {
+            mSpecialForm = true;
         }
     };
 
@@ -133,9 +175,12 @@ namespace Expressions
     public:
         std::unique_ptr<Expression> call(expression_vector args, Parser::Scope *scope) override;
 
-        /* lambda_expr should have "lambda" at front(), but it should have the arg tuple */
+        std::unique_ptr<Expression> clone() override;
+
+        /* lambda_expr should have "lambda" at front(), and it should have the arg tuple */
         explicit LambdaExpression(std::vector<std::string> lambda_expr, std::vector<std::string> lambda_args)
         {
+
             if (lambda_expr.size() < 3)
                 throw std::invalid_argument("Lambda requires two params"); //TODO: more descriptive
 
@@ -152,11 +197,22 @@ namespace Expressions
 
             mLambdaArgs = std::move(lambda_args);
             mLambdaExpr = std::move(lambda_expr);
+
+            mSpecialForm = true;
         }
 
     protected:
         std::vector<std::string> mLambdaArgs;
         std::vector<std::string> mLambdaExpr;
+
+    private:
+        LambdaExpression(const LambdaExpression &old_expr)
+        {
+            this->mLambdaArgs = old_expr.mLambdaArgs;
+            this->mLambdaExpr = old_expr.mLambdaExpr;
+            this->mFuncName = old_expr.mFuncName;
+            this->mFunction = old_expr.mFunction;
+        }
     };
 
     class NumericalValueExpression : public Expression // TODO: Implement non-numerical values.

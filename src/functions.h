@@ -16,7 +16,12 @@ namespace Functions
     extern std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
                                                                                         Parser::Scope *)>> funcMap;
 
+    extern std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
+                                                                                        Parser::Scope *)>> specialFormMap;
+
     void registerFunctions();
+
+    std::unique_ptr<Expressions::Expression> getFormByName(std::string);
 
     std::unique_ptr<Expressions::Expression> getFuncByName(std::string);
 }

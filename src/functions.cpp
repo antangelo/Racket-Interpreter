@@ -10,8 +10,78 @@ namespace Functions
     std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
                                                                                  Parser::Scope *)>> funcMap;
 
+    std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
+                                                                                 Parser::Scope *)>> specialFormMap;
+
+    void registerSpecialForms()
+    {
+        specialFormMap["define"] = [](expression_vector expr,
+                                      Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+        {
+            std::string name;
+            std::unique_ptr<Expressions::Expression> binding;
+
+            //TODO: tidy up this code
+
+            if (auto raw = dynamic_cast<Expressions::UnparsedExpression *>(expr[0].get()))
+            {
+                if (raw->toString().front() == '(' || raw->toString().front() == '[')
+                {
+                    std::vector<std::string> fnSignature = Parser::parseTuple(raw->toString());
+
+                    /** Pop the name off the signature, then the rest becomes the parameters of the function */
+                    name = fnSignature[0];
+                    fnSignature.erase(fnSignature.begin());
+
+                    /** Next, we need to parse the lambda body */
+                    if (auto body = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
+                    {
+                        /** The lambda requires a string containing the args to be given to it */
+                        std::string lambdaArgs = "(";
+                        for (int i = 0; i < fnSignature.size(); ++i)
+                        {
+                            lambdaArgs += fnSignature[i];
+                            if (i < fnSignature.size() - 1) lambdaArgs += " ";
+                        }
+                        lambdaArgs += ")";
+
+                        /** Formatting for the lambda expression */
+                        std::vector<std::string> lambdaBody;
+                        lambdaBody.emplace_back("lambda");
+                        lambdaBody.push_back(lambdaArgs);
+                        lambdaBody.push_back(body->toString());
+
+                        binding = std::unique_ptr<Expressions::Expression>
+                                (new Expressions::LambdaExpression(lambdaBody, fnSignature));
+
+                        scope->define(name, std::move(binding));
+                        return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression());
+                    }
+                    else
+                        throw std::invalid_argument(
+                                "Error: Special form given parsed expression: " + expr[1]->toString());
+                }
+
+                name = raw->toString();
+            }
+            else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[0]->toString());
+
+            if (auto raw = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
+            {
+                binding = raw->evaluate(&expr[1], scope);
+            }
+            else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[1]->toString());
+
+            scope->define(name, std::move(binding));
+
+            return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression());
+        };
+    }
+
     void registerFunctions()
     {
+        registerSpecialForms();
+
         funcMap["+"] = [](expression_vector expr, Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
         {
             double sum = 0;
@@ -125,6 +195,13 @@ namespace Functions
 
             return expr.back()->evaluate(&expr.back(), scope);
         };
+    }
+
+    std::unique_ptr<Expressions::Expression> getFormByName(std::string name)
+    {
+        auto m = specialFormMap.at(name);
+
+        return std::unique_ptr<Expressions::Expression>(new Expressions::SpecialFormExpression(name, m));
     }
 
     std::unique_ptr<Expressions::Expression> getFuncByName(std::string name)

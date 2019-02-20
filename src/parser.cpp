@@ -136,6 +136,18 @@ namespace Parser
         str = out;
     }
 
+    void parseSpecialForm(std::string str, Scope *scope, std::unique_ptr<Expressions::Expression> &out)
+    {
+        if (Functions::specialFormMap.count(str) > 0)
+        {
+            out = Functions::getFormByName(str);
+        }
+        else
+        {
+            out = std::unique_ptr<Expressions::Expression>(new Expressions::UnparsedExpression(str));
+        }
+    }
+
     bool parse(std::string str, Scope *scope, std::unique_ptr<Expressions::Expression> &out)
     {
         if ((str.front() == '(' || str.front() == '[')
@@ -155,6 +167,11 @@ namespace Parser
             out = Functions::getFuncByName(str);
             return true;
         }
+        else if (Functions::specialFormMap.count(str) > 0)
+        {
+            out = Functions::getFormByName(str);
+            return true;
+        }
         else
         {
             try
@@ -166,9 +183,10 @@ namespace Parser
             }
             catch (std::invalid_argument &exception)
             {
-                //std::cout << exception.what() << std::endl;
-                throw;
+                std::cout << exception.what() << std::endl;
             }
         }
+
+        return false;
     }
 }
