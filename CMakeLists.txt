@@ -3,4 +3,22 @@ project(Racket_Interpreter)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(Racket_Interpreter src/main.cpp src/parser.cpp src/parser.h src/functions.cpp src/functions.h src/expressions.cpp src/expressions.h)
+find_package(Boost 1.57.0 COMPONENTS system filesystem REQUIRED)
+
+if (Boost_FOUND)
+
+    message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+    message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
+    message(STATUS "Boost_VERSION: ${Boost_VERSION}")
+
+    include_directories(${Boost_INCLUDE_DIRS})
+
+endif ()
+
+add_executable(Racket_Interpreter src/main.cpp src/parser.cpp src/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp)
+
+if (Boost_FOUND)
+
+    target_link_libraries(Racket_Interpreter ${Boost_LIBRARIES})
+
+endif ()

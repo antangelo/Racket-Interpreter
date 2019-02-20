@@ -5,7 +5,7 @@
 #include <iostream>
 
 #include "parser.h"
-#include "functions.h"
+#include "functions/functions.h"
 
 namespace Parser
 {
