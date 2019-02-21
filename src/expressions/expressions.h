@@ -10,6 +10,8 @@
 #include <vector>
 #include <functional>
 
+#include "boost/rational.hpp"
+
 namespace Parser
 {
     class Scope;
@@ -218,7 +220,7 @@ namespace Expressions
     class NumericalValueExpression : public Expression // TODO: Implement non-numerical values.
     {
     public:
-        double mValue;
+        boost::rational<int> mValue;
 
         bool isValue() override;
 
@@ -228,9 +230,60 @@ namespace Expressions
 
         std::unique_ptr<Expression> clone() override;
 
-        explicit NumericalValueExpression(double value)
+        explicit NumericalValueExpression(const std::string &str)
+        {
+            if (str.find('/') != std::string::npos)
+            {
+                bool slashPassed = false;
+                int numerator = 0, denominator = 0;
+                for (int i = 0; i < str.length(); ++i)
+                {
+                    if (str[i] == '/' && !slashPassed)
+                    {
+                        slashPassed = true;
+                    }
+                    else if (str[i] == '/') throw std::invalid_argument("Parsing Error on " + str);
+                    else if (isdigit(str[i]))
+                    {
+                        if (slashPassed)
+                        {
+                            denominator *= 10;
+                            denominator += str[i] - '0';
+                        }
+                        else
+                        {
+                            numerator *= 10;
+                            numerator += str[i] - '0';
+                        }
+                    }
+                }
+
+                mValue = boost::rational<int>(numerator, denominator);
+            }
+            else
+            {
+                double value = std::stod(str);
+
+                int denominator = 1;
+
+                while (value - (int) value != 0)
+                {
+                    value *= 10;
+                    denominator *= 10;
+                }
+
+                mValue = boost::rational<int>((int) value, denominator);
+            }
+        }
+
+        explicit NumericalValueExpression(boost::rational<int> value)
         {
             mValue = value;
+        }
+
+        explicit NumericalValueExpression(int numerator, int denominator)
+        {
+            mValue = boost::rational<int>(numerator, denominator);
         }
 
     private:

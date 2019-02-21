@@ -84,7 +84,7 @@ namespace Functions
 
         funcMap["+"] = [](expression_vector expr, Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
         {
-            double sum = 0;
+            boost::rational<int> sum = 0;
 
             for (auto &i : expr)
             {
@@ -99,7 +99,7 @@ namespace Functions
 
         funcMap["*"] = [](expression_vector expr, Parser::Scope *) -> std::unique_ptr<Expressions::Expression>
         {
-            double product = 1;
+            boost::rational<int> product(1);
 
             for (auto &i : expr)
             {
@@ -124,7 +124,7 @@ namespace Functions
                             (new Expressions::NumericalValueExpression(-1 * first->mValue));
                 }
 
-                double diff = first->mValue;
+                boost::rational<int> diff = first->mValue;
 
                 for (int i = 1; i < expr.size(); i++)
                 {
@@ -151,7 +151,7 @@ namespace Functions
                             (new Expressions::NumericalValueExpression(1 / first->mValue));
                 }
 
-                double quotient = first->mValue;
+                boost::rational<int> quotient = first->mValue;
 
                 for (int i = 1; i < expr.size(); i++)
                 {

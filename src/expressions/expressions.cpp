@@ -56,7 +56,9 @@ namespace Expressions
 
     std::string NumericalValueExpression::toString() const
     {
-        return std::to_string(mValue);
+        if (mValue.denominator() == 1) return std::to_string(mValue.numerator());
+
+        return std::to_string(mValue.numerator()) + "/" + std::to_string(mValue.denominator());
     }
 
     std::unique_ptr<Expression> NumericalValueExpression::clone()

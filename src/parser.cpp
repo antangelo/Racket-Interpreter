@@ -177,7 +177,7 @@ namespace Parser
             try
             {
                 std::unique_ptr<Expressions::Expression> expr(
-                        new Expressions::NumericalValueExpression(std::stod(str)));
+                        new Expressions::NumericalValueExpression(str));
                 out = std::move(expr);
                 return true;
             }
