@@ -88,4 +88,27 @@ namespace Expressions
     {
         return std::unique_ptr<Expression>(new VoidValueExpression());
     }
+
+    /* BooleanValueExpression */
+
+    bool BooleanValueExpression::isValue()
+    {
+        return true;
+    }
+
+    std::unique_ptr<Expression> BooleanValueExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref,
+                                                                 Parser::Scope *scope)
+    {
+        return std::move(*obj_ref);
+    }
+
+    std::string BooleanValueExpression::toString() const
+    {
+        return this->value ? "true" : "false";
+    }
+
+    std::unique_ptr<Expression> BooleanValueExpression::clone()
+    {
+        return std::unique_ptr<Expression>(new BooleanValueExpression(this->value));
+    }
 }

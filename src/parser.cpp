@@ -172,6 +172,16 @@ namespace Parser
             out = Functions::getFormByName(str);
             return true;
         }
+        else if (str == "true")
+        {
+            out = std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(true));
+            return true;
+        }
+        else if (str == "false")
+        {
+            out = std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(false));
+            return true;
+        }
         else
         {
             try

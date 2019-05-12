@@ -15,7 +15,7 @@ if (Boost_FOUND)
 
 endif ()
 
-add_executable(Racket_Interpreter src/main.cpp src/parser.cpp src/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp)
+add_executable(Racket_Interpreter src/main.cpp src/parser.cpp src/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp src/functions/boolean_operations.cpp)
 
 if (Boost_FOUND)
 

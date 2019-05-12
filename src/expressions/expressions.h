@@ -217,7 +217,7 @@ namespace Expressions
         }
     };
 
-    class NumericalValueExpression : public Expression // TODO: Implement non-numerical values.
+    class NumericalValueExpression : public Expression
     {
     public:
         boost::rational<int> mValue;
@@ -303,6 +303,28 @@ namespace Expressions
         std::string toString() const override;
 
         std::unique_ptr<Expression> clone() override;
+    };
+
+    // Non-numerical value list:
+    // TODO: Lists
+
+    class BooleanValueExpression : public Expression
+    {
+    public:
+        bool value = false;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit BooleanValueExpression(bool val)
+        {
+            this->value = val;
+        }
     };
 }
 
