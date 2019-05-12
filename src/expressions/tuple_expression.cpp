@@ -12,14 +12,15 @@ namespace Expressions
         return false; // for now, will change in the future.
     }
 
-    std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope)
+    std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope)
     {
         for (auto &expr : mTupleMembers)
         {
             if (!expr->isValue())
             {
-                expr = expr->evaluate(&expr, scope);
-                return std::move(*obj_ref);
+                auto ref = expr.get();
+                expr = ref->evaluate(std::move(expr), scope);
+                return std::move(obj_ref); // Only evaluate one step
             }
         }
 
@@ -32,7 +33,7 @@ namespace Expressions
             return func->call(std::move(mTupleMembers), scope);
         }
 
-        return std::move(*obj_ref);
+        return std::move(obj_ref);
     }
 
     std::string TupleExpression::toString() const

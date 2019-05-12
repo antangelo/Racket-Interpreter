@@ -19,7 +19,7 @@ namespace Expressions
         return true;
     }
 
-    std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> * /* obj_ref*/,
+    std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> /* obj_ref*/,
                                                              Parser::Scope *scope)
     {
         std::unique_ptr<Expression> expr;
@@ -49,9 +49,9 @@ namespace Expressions
     }
 
     std::unique_ptr<Expression>
-    NumericalValueExpression::evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope * /*scope*/)
+    NumericalValueExpression::evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope * /*scope*/)
     {
-        return std::move(*obj_ref);
+        return std::move(obj_ref);
     }
 
     std::string NumericalValueExpression::toString() const
@@ -74,9 +74,9 @@ namespace Expressions
     }
 
     std::unique_ptr<Expression>
-    VoidValueExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref, Parser::Scope * /* scope */)
+    VoidValueExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref, Parser::Scope * /* scope */)
     {
-        return std::move(*obj_ref);
+        return std::move(obj_ref);
     }
 
     std::string VoidValueExpression::toString() const
@@ -96,10 +96,10 @@ namespace Expressions
         return true;
     }
 
-    std::unique_ptr<Expression> BooleanValueExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref,
+    std::unique_ptr<Expression> BooleanValueExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref,
                                                                  Parser::Scope * /* scope */)
     {
-        return std::move(*obj_ref);
+        return std::move(obj_ref);
     }
 
     std::string BooleanValueExpression::toString() const

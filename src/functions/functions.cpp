@@ -5,6 +5,10 @@
 #include "functions.h"
 #include "../parser.h"
 
+/* From boolean_operations.cpp */
+// To be included in the next commit
+//void register_boolean_ops();
+
 namespace Functions
 {
     std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
@@ -68,7 +72,7 @@ namespace Functions
 
             if (auto raw = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
             {
-                binding = raw->evaluate(&expr[1], scope);
+                binding = raw->evaluate(std::move(expr[1]), scope);
             }
             else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[1]->toString());
 
@@ -81,6 +85,7 @@ namespace Functions
     void registerFunctions()
     {
         registerSpecialForms();
+        //register_boolean_ops();
 
         funcMap["+"] = [](expression_vector expr, Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
         {
@@ -190,21 +195,21 @@ namespace Functions
 
             for (int i = 0; i < expr.size() - 1; i++)
             {
-                expr[i]->evaluate(&expr[i], scope);
+                expr[i]->evaluate(std::move(expr[i]), scope);
             }
 
-            return expr.back()->evaluate(&expr.back(), scope);
+            return expr.back()->evaluate(std::move(expr.back()), scope);
         };
     }
 
-    std::unique_ptr<Expressions::Expression> getFormByName(std::string name)
+    std::unique_ptr<Expressions::Expression> getFormByName(const std::string &name)
     {
         auto m = specialFormMap.at(name);
 
         return std::unique_ptr<Expressions::Expression>(new Expressions::SpecialFormExpression(name, m));
     }
 
-    std::unique_ptr<Expressions::Expression> getFuncByName(std::string name)
+    std::unique_ptr<Expressions::Expression> getFuncByName(const std::string &name)
     {
         auto m = funcMap.at(name);
 

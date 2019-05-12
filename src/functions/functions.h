@@ -21,9 +21,9 @@ namespace Functions
 
     void registerFunctions();
 
-    std::unique_ptr<Expressions::Expression> getFormByName(std::string);
+    std::unique_ptr<Expressions::Expression> getFormByName(const std::string &);
 
-    std::unique_ptr<Expressions::Expression> getFuncByName(std::string);
+    std::unique_ptr<Expressions::Expression> getFuncByName(const std::string &);
 }
 
 #endif //RACKET_INTERPRETER_FUNCTIONS_H

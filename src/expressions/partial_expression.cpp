@@ -14,7 +14,8 @@ namespace Expressions
         return false;
     }
 
-    std::unique_ptr<Expression> PartialExpression::evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope)
+    std::unique_ptr<Expression>
+    PartialExpression::evaluate(std::unique_ptr<Expression> /* obj_ref */, Parser::Scope *scope)
     {
         Expressions::expression_vector members;
 
@@ -55,7 +56,7 @@ namespace Expressions
             {
                 // Not the best, but obj_ref isn't used by evaluate() so it ends up saving
                 // unnecessary pointer creation with a PartialExpression here.
-                members.push_back(std::move(partialExpression->evaluate(obj_ref, scope)));
+                members.push_back(std::move(partialExpression->evaluate(nullptr, scope)));
             }
             else
             {

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
                 {
                     if (steps >= 100) break;
 
-                    expr = exprPtr->evaluate(&expr, globalScope.get());
+                    expr = exprPtr->evaluate(std::move(expr), globalScope.get());
                     exprPtr = expr.get();
 
                     if (dynamic_cast<Expressions::VoidValueExpression *>(exprPtr))

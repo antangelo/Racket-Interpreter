@@ -15,9 +15,9 @@ namespace Expressions
     }
 
     inline std::unique_ptr<Expression>
-    FunctionExpression::evaluate(std::unique_ptr<Expressions::Expression> *obj_ref, Parser::Scope *scope)
+    FunctionExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref, Parser::Scope * /* scope */)
     {
-        return std::move(*obj_ref);
+        return std::move(obj_ref);
     }
 
     std::string FunctionExpression::toString() const

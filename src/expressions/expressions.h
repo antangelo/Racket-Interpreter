@@ -12,6 +12,7 @@
 
 #include "boost/rational.hpp"
 
+/* From parser.h */
 namespace Parser
 {
     class Scope;
@@ -27,8 +28,8 @@ namespace Expressions
         virtual bool isValue() = 0;
 
         /* Should evaluate the expression and produce an equivalent expression that is
-         * one step closer to being a value. If the expression is a value, should produce itself. */
-        virtual std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) = 0;
+         * one step closer to being a value. If the expression is a value, should produce itself (obj_ref). */
+        virtual std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) = 0;
 
         virtual std::string toString() const = 0;
 
@@ -51,7 +52,7 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
@@ -76,7 +77,7 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
@@ -101,7 +102,7 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
@@ -127,7 +128,7 @@ namespace Expressions
     public:
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
@@ -224,7 +225,7 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
@@ -298,7 +299,7 @@ namespace Expressions
     public:
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
@@ -315,7 +316,7 @@ namespace Expressions
 
         bool isValue() override;
 
-        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> *obj_ref, Parser::Scope *scope) override;
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope) override;
 
         std::string toString() const override;
 
