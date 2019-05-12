@@ -4,12 +4,26 @@
 
 #include "functions.h"
 
-void register_relational_ops()
+bool compare(const std::string &comp, const boost::rational<int> &v1, const boost::rational<int> &v2)
 {
-    using Expressions::expression_vector;
+    if (comp == "<")
+        return v1 < v2;
+    else if (comp == ">")
+        return v1 > v2;
+    else if (comp == "<=")
+        return v1 <= v2;
+    else if (comp == ">=")
+        return v1 >= v2;
+    else if (comp == "=")
+        return v1 == v2;
+    else
+        throw std::invalid_argument("Invalid comparator " + comp);
+}
 
-    Functions::funcMap["="] = [](expression_vector expr,
-                                 Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+void makeCompFunction(const std::string &comp)
+{
+    Functions::funcMap[comp] = [comp](Expressions::expression_vector expr,
+                                      Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
     {
         if (expr.size() < 2) throw std::invalid_argument("Expected at least two arguments"); //TODO: arg count
         boost::rational<int> compVal;
@@ -25,14 +39,25 @@ void register_relational_ops()
         {
             if (auto ei = dynamic_cast<Expressions::NumericalValueExpression *>(expr[i].get()))
             {
-                retValue = retValue && (ei->mValue == compVal);
+                retValue = retValue && compare(comp, compVal, ei->mValue);
                 if (!retValue) break;
+
+                compVal = ei->mValue;
             }
             else throw std::invalid_argument("Expected number, found " + expr[i]->toString());
         }
 
         return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retValue));
     };
+}
+
+void register_relational_ops()
+{
+    makeCompFunction("=");
+    makeCompFunction("<");
+    makeCompFunction(">");
+    makeCompFunction("<=");
+    makeCompFunction(">=");
 }
 
 void register_boolean_ops()
