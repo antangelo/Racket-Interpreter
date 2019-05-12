@@ -29,7 +29,7 @@ namespace Parser
 
         bool contains(const std::string &);
 
-        void define(std::string, std::unique_ptr<Expressions::Expression>);
+        void define(const std::string &, std::unique_ptr<Expressions::Expression>);
 
         std::unique_ptr<Expressions::Expression> getDefinition(const std::string &);
 
@@ -42,9 +42,9 @@ namespace Parser
 
     std::vector<std::string> parseTuple(std::string);
 
-    void replaceInScope(std::string &, std::string, std::string);
+    void replaceInScope(std::string &, const std::string &, const std::string &);
 
-    void parseSpecialForm(std::string, Scope *, std::unique_ptr<Expressions::Expression> &);
+    void parseSpecialForm(const std::string &, std::unique_ptr<Expressions::Expression> &);
 
     bool parse(std::string, Scope *, std::unique_ptr<Expressions::Expression> &);
 }

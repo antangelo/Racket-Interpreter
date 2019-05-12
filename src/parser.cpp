@@ -17,7 +17,7 @@ namespace Parser
                || (mParent != nullptr && mParent->contains(token));
     }
 
-    void Scope::define(std::string key, std::unique_ptr<Expressions::Expression> val)
+    void Scope::define(const std::string &key, std::unique_ptr<Expressions::Expression> val)
     {
         definitions[key] = std::move(val);
     }
@@ -101,7 +101,7 @@ namespace Parser
      * @param key The key to replace
      * @param rpl The string to replace key with
      */
-    void replaceInScope(std::string &str, std::string key, std::string rpl)
+    void replaceInScope(std::string &str, const std::string &key, const std::string &rpl)
     {
         if (str == key)
         {
@@ -136,7 +136,7 @@ namespace Parser
         str = out;
     }
 
-    void parseSpecialForm(std::string str, Scope *scope, std::unique_ptr<Expressions::Expression> &out)
+    void parseSpecialForm(const std::string &str, std::unique_ptr<Expressions::Expression> &out)
     {
         if (Functions::specialFormMap.count(str) > 0)
         {

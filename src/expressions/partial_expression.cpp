@@ -32,7 +32,7 @@ namespace Expressions
             for (const auto &str : mTupleMembers)
             {
                 std::unique_ptr<Expressions::Expression> expr;
-                Parser::parseSpecialForm(str, scope, expr);
+                Parser::parseSpecialForm(str, expr);
 
                 members.push_back(std::move(expr));
             }
