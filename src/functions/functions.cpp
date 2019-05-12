@@ -6,8 +6,7 @@
 #include "../parser.h"
 
 /* From boolean_operations.cpp */
-// To be included in the next commit
-//void register_boolean_ops();
+void register_boolean_ops();
 
 namespace Functions
 {
@@ -85,7 +84,7 @@ namespace Functions
     void registerFunctions()
     {
         registerSpecialForms();
-        //register_boolean_ops();
+        register_boolean_ops();
 
         funcMap["+"] = [](expression_vector expr, Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
         {
