@@ -194,10 +194,10 @@ namespace Functions
 
             for (int i = 0; i < expr.size() - 1; i++)
             {
-                expr[i]->evaluate(std::move(expr[i]), scope);
+                expr[i] = Expressions::evaluate(std::move(expr[i]), scope);
             }
 
-            return expr.back()->evaluate(std::move(expr.back()), scope);
+            return Expressions::evaluate(std::move(expr.back()), scope);
         };
     }
 

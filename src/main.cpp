@@ -34,17 +34,15 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                auto exprPtr = expr.get();
                 int steps = 0;
 
-                while (!exprPtr->isValue())
+                while (!expr->isValue())
                 {
                     if (steps >= 100) break;
 
-                    expr = exprPtr->evaluate(std::move(expr), globalScope.get());
-                    exprPtr = expr.get();
+                    expr = Expressions::evaluate(std::move(expr), globalScope.get());
 
-                    if (dynamic_cast<Expressions::VoidValueExpression *>(exprPtr))
+                    if (dynamic_cast<Expressions::VoidValueExpression *>(expr.get()))
                     {
                         continue; // Don't print void values on their own
                     }
@@ -52,18 +50,18 @@ int main(int argc, char *argv[])
                     if (hideSteps) continue;
 
                     std::cout << "Step " << steps++ << std::endl;
-                    std::cout << *exprPtr << std::endl;
+                    std::cout << *expr << std::endl;
                 }
 
                 // Prints output if stepping is off, since the final statement won't be printed otherwise
-                if (hideSteps && dynamic_cast<Expressions::VoidValueExpression *> (exprPtr) == nullptr)
-                    std::cout << *exprPtr << std::endl;
+                if (hideSteps && dynamic_cast<Expressions::VoidValueExpression *> (expr.get()) == nullptr)
+                    std::cout << *expr << std::endl;
             }
         }
         catch (std::exception &exception)
         {
-            //std::cout << "Exception occurred: " << exception.what() << std::endl;
-            throw;
+            std::cout << "Exception occurred: " << exception.what() << std::endl;
+            //throw;
         }
     }
 

@@ -56,7 +56,7 @@ namespace Expressions
             {
                 // Not the best, but obj_ref isn't used by evaluate() so it ends up saving
                 // unnecessary pointer creation with a PartialExpression here.
-                members.push_back(std::move(partialExpression->evaluate(nullptr, scope)));
+                members.push_back(std::move(partialExpression->evaluate(std::move(expr), scope)));
             }
             else
             {

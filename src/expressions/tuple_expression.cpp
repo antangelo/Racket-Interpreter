@@ -18,8 +18,7 @@ namespace Expressions
         {
             if (!expr->isValue())
             {
-                auto ref = expr.get();
-                expr = ref->evaluate(std::move(expr), scope);
+                expr = Expressions::evaluate(std::move(expr), scope);
                 return std::move(obj_ref); // Only evaluate one step
             }
         }

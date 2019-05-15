@@ -68,7 +68,7 @@ namespace Expressions
         if (auto pex = dynamic_cast<PartialExpression *>(expr.get()))
         {
             // Evaluate the resulting partial expression in the scope of the function.
-            expr = pex->evaluate(nullptr, &fnScope);
+            expr = pex->evaluate(std::move(expr), &fnScope);
         }
 
         return expr;
