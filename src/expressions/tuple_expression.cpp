@@ -32,7 +32,7 @@ namespace Expressions
             return func->call(std::move(mTupleMembers), scope);
         }
 
-        return std::move(obj_ref);
+        throw std::invalid_argument("Expected a function, found " + mTupleMembers.front()->toString());
     }
 
     std::string TupleExpression::toString() const
