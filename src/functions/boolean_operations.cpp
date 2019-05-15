@@ -3,6 +3,7 @@
 //
 
 #include "functions.h"
+#include "../parser.h"
 
 bool compare(const std::string &comp, const boost::rational<int> &v1, const boost::rational<int> &v2)
 {
@@ -60,9 +61,89 @@ void register_relational_ops()
     makeCompFunction(">=");
 }
 
+void register_if_form()
+{
+    Functions::specialFormMap["if"] = [](Expressions::expression_vector expr,
+                                         Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+    {
+        if (expr.size() != 3) throw std::invalid_argument("if expects 3 args");
+
+        std::unique_ptr<Expressions::Expression> test = Expressions::evaluate(std::move(expr[0]), scope);
+        std::unique_ptr<Expressions::Expression> result;
+
+        while (!test->isValue())
+        {
+            test = Expressions::evaluate(std::move(test), scope);
+        }
+
+        if (auto boolVal = dynamic_cast<Expressions::BooleanValueExpression *>(test.get()))
+        {
+            if (boolVal->value)
+            {
+                result = Expressions::evaluate(std::move(expr[1]), scope);
+            }
+            else
+            {
+                result = Expressions::evaluate(std::move(expr[2]), scope);
+            }
+        }
+        else throw std::invalid_argument("if expected boolean, found " + test->toString());
+
+        return result;
+    };
+
+    Functions::specialFormMap["cond"] = [](Expressions::expression_vector expr,
+                                           Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+    {
+        Expressions::expression_vector simplifiedExpr = Expressions::expression_vector();
+        simplifiedExpr.insert(simplifiedExpr.begin(), std::move(Functions::getFormByName("cond")));
+
+        if (expr.empty()) throw std::invalid_argument("cond: Reached end without finding true condition");
+
+        std::unique_ptr<Expressions::Expression> firstCond = Expressions::evaluate(std::move(expr[0]), scope);
+        std::unique_ptr<Expressions::Expression> tupleExpr = Expressions::evaluate(std::move(firstCond), scope);
+
+        if (auto tupleCast = dynamic_cast<Expressions::TupleExpression *>(tupleExpr.get()))
+        {
+            std::unique_ptr<Expressions::Expression> test = std::move(tupleCast->mTupleMembers[0]);
+
+            if (!test->isValue())
+            {
+                test = Expressions::evaluate(std::move(test), scope);
+                tupleCast->mTupleMembers[0] = std::move(test);
+                Parser::parseSpecialForm(tupleCast->toString(), expr[0]);
+            }
+            else
+            {
+                if (auto boolVal = dynamic_cast<Expressions::BooleanValueExpression *>(test.get()))
+                {
+                    if (boolVal->value)
+                    {
+                        return std::move(tupleCast->mTupleMembers[1]);
+                    }
+                    else
+                    {
+                        expr.erase(expr.begin());
+                    }
+                }
+                else throw std::invalid_argument("cond: Expected boolean, found " + test->toString());
+            }
+        }
+        else throw std::invalid_argument("cond: Expected test, found " + tupleExpr->toString());
+
+        for (auto &conditional : expr)
+        {
+            simplifiedExpr.insert(simplifiedExpr.end(), std::move(conditional));
+        }
+
+        return std::unique_ptr<Expressions::Expression>(new Expressions::TupleExpression(std::move(simplifiedExpr)));
+    };
+}
+
 void register_boolean_ops()
 {
     register_relational_ops();
+    register_if_form();
 
     using Expressions::expression_vector;
 
@@ -83,10 +164,15 @@ void register_boolean_ops()
     {
         bool retVal = true;
 
-        for (auto &exp : expr)
+        for (auto &unparsedExpression : expr)
         {
-            auto ref = exp.get();
-            std::unique_ptr<Expressions::Expression> evaluated = ref->evaluate(std::move(exp), scope);
+            std::unique_ptr<Expressions::Expression> evaluated = Expressions::evaluate(std::move(unparsedExpression),
+                                                                                       scope);
+
+            while (!evaluated->isValue())
+            {
+                evaluated = Expressions::evaluate(std::move(evaluated), scope);
+            }
 
             if (auto bval = dynamic_cast<Expressions::BooleanValueExpression *>(evaluated.get()))
             {
@@ -104,10 +190,15 @@ void register_boolean_ops()
     {
         bool retVal = false;
 
-        for (auto &exp : expr)
+        for (auto &unparsedExpression : expr)
         {
-            auto ref = exp.get();
-            std::unique_ptr<Expressions::Expression> evaluated = ref->evaluate(std::move(exp), scope);
+            std::unique_ptr<Expressions::Expression> evaluated = Expressions::evaluate(std::move(unparsedExpression),
+                                                                                       scope);
+
+            while (!evaluated->isValue())
+            {
+                evaluated = Expressions::evaluate(std::move(evaluated), scope);
+            }
 
             if (auto bval = dynamic_cast<Expressions::BooleanValueExpression *>(evaluated.get()))
             {

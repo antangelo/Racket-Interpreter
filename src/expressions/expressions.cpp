@@ -12,6 +12,12 @@ namespace Expressions
         return stream;
     }
 
+    std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope)
+    {
+        auto ref = obj_ref.get();
+        return ref->evaluate(std::move(obj_ref), scope);
+    }
+
     /* UnparsedExpression */
 
     bool UnparsedExpression::isValue()

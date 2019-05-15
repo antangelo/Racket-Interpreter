@@ -43,6 +43,9 @@ namespace Expressions
         explicit Expression() = default;
     };
 
+
+    std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression>, Parser::Scope *);
+
     typedef std::vector<std::unique_ptr<Expression>> expression_vector;
 
     class UnparsedExpression : public Expression

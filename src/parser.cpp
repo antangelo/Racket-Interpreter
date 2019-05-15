@@ -40,17 +40,19 @@ namespace Parser
 
     /**
     * Gives the ending index of the first occurring tuple in the given string
-    * @param tuple A string where the first character is a '(' and containing a closing ')' somewhere.
-    * @return The index of the ')' closing the tuple opened by the first character, or 0 if it cannot be found.
+    * @param tuple A string where the first character is parenOpen and containing a closing parenClose somewhere.
+    * @param parenOpen The opening parenthesis character (e.g. '(')
+    * @param parenClose The closing parenthesis character (e.g. ')')
+    * @return The index of the parenClose closing the tuple opened by the first character, or 0 if it cannot be found.
     */
-    size_t findTupleEnd(std::string tuple)
+    size_t findTupleEnd(std::string tuple, char parenOpen, char parenClose)
     {
         int tupleCount = 0;
 
         for (size_t index = 0; index < tuple.size(); index++)
         {
-            if (tuple[index] == '(') tupleCount++;
-            else if (tuple[index] == ')') tupleCount--;
+            if (tuple[index] == parenOpen) tupleCount++;
+            else if (tuple[index] == parenClose) tupleCount--;
 
             /* Based on the assumption that the first character is a '(',
              * this won't be true until we've found the end index*/
@@ -58,6 +60,11 @@ namespace Parser
         }
 
         return std::string::npos;
+    }
+
+    size_t findTupleEnd(std::string tuple)
+    {
+        return findTupleEnd(std::move(tuple), '(', ')');
     }
 
     /**
@@ -81,7 +88,9 @@ namespace Parser
             {
                 /* findTupleEnd produces the index of the ending ')', need to add
                  * one since substr is exclusive on the ending boundary. */
-                index = findTupleEnd(str) + 1;
+                char openParen = str[0];
+                char closeParen = str[0] == '(' ? ')' : ']';
+                index = findTupleEnd(str, openParen, closeParen) + 1;
             }
 
             tupleElements.push_back(str.substr(0, index));
