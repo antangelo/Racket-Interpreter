@@ -3,6 +3,7 @@
 //
 
 #include "expressions.h"
+#include "../parser.h"
 
 namespace Expressions
 {
@@ -12,13 +13,13 @@ namespace Expressions
         return false; // for now, will change in the future.
     }
 
-    std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope)
+    std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> obj_ref)
     {
         for (auto &expr : mTupleMembers)
         {
             if (!expr->isValue())
             {
-                expr = Expressions::evaluate(std::move(expr), scope);
+                expr = Expressions::evaluate(std::move(expr));
                 return std::move(obj_ref); // Only evaluate one step
             }
         }
@@ -29,7 +30,7 @@ namespace Expressions
             auto f = std::unique_ptr<Expression>(mTupleMembers.front().release());
             mTupleMembers.erase(mTupleMembers.begin());
 
-            return func->call(std::move(mTupleMembers), scope);
+            return func->call(std::move(mTupleMembers));
         }
 
         throw std::invalid_argument("Expected a function, found " + mTupleMembers.front()->toString());
@@ -49,6 +50,6 @@ namespace Expressions
 
     std::unique_ptr<Expression> TupleExpression::clone()
     {
-        return std::unique_ptr<Expression>(new TupleExpression(*this));
+        return std::unique_ptr<Expression>(new TupleExpression(*this, this->localScope));
     }
 }

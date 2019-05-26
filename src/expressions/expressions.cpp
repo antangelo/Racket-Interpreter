@@ -12,10 +12,10 @@ namespace Expressions
         return stream;
     }
 
-    std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope *scope)
+    std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref)
     {
         auto ref = obj_ref.get();
-        return ref->evaluate(std::move(obj_ref), scope);
+        return ref->evaluate(std::move(obj_ref));
     }
 
     /* UnparsedExpression */
@@ -25,12 +25,11 @@ namespace Expressions
         return true;
     }
 
-    std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> /* obj_ref*/,
-                                                             Parser::Scope *scope)
+    std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> /* obj_ref*/)
     {
         std::unique_ptr<Expression> expr;
 
-        bool b = Parser::parse(mContents, scope, expr);
+        bool b = Parser::parse(mContents, localScope, expr);
 
         if (!b) throw std::invalid_argument("Parsing failed in expression: " + mContents);
 
@@ -44,7 +43,7 @@ namespace Expressions
 
     std::unique_ptr<Expression> UnparsedExpression::clone()
     {
-        return std::unique_ptr<Expression>(new UnparsedExpression(*this));
+        return std::unique_ptr<Expression>(new UnparsedExpression(*this, this->localScope));
     }
 
     /* NumericalValueExpression */
@@ -55,7 +54,7 @@ namespace Expressions
     }
 
     std::unique_ptr<Expression>
-    NumericalValueExpression::evaluate(std::unique_ptr<Expression> obj_ref, Parser::Scope * /*scope*/)
+    NumericalValueExpression::evaluate(std::unique_ptr<Expression> obj_ref)
     {
         return std::move(obj_ref);
     }
@@ -69,7 +68,7 @@ namespace Expressions
 
     std::unique_ptr<Expression> NumericalValueExpression::clone()
     {
-        return std::unique_ptr<Expression>(new NumericalValueExpression(*this));
+        return std::unique_ptr<Expression>(new NumericalValueExpression(*this, this->localScope));
     }
 
     /* VoidValueExpression */
@@ -80,7 +79,7 @@ namespace Expressions
     }
 
     std::unique_ptr<Expression>
-    VoidValueExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref, Parser::Scope * /* scope */)
+    VoidValueExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref)
     {
         return std::move(obj_ref);
     }
@@ -92,7 +91,7 @@ namespace Expressions
 
     std::unique_ptr<Expression> VoidValueExpression::clone()
     {
-        return std::unique_ptr<Expression>(new VoidValueExpression());
+        return std::unique_ptr<Expression>(new VoidValueExpression(localScope));
     }
 
     /* BooleanValueExpression */
@@ -102,8 +101,7 @@ namespace Expressions
         return true;
     }
 
-    std::unique_ptr<Expression> BooleanValueExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref,
-                                                                 Parser::Scope * /* scope */)
+    std::unique_ptr<Expression> BooleanValueExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref)
     {
         return std::move(obj_ref);
     }
@@ -115,6 +113,6 @@ namespace Expressions
 
     std::unique_ptr<Expression> BooleanValueExpression::clone()
     {
-        return std::unique_ptr<Expression>(new BooleanValueExpression(this->value));
+        return std::unique_ptr<Expression>(new BooleanValueExpression(this->value, this->localScope));
     }
 }

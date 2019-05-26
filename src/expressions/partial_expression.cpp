@@ -15,7 +15,7 @@ namespace Expressions
     }
 
     std::unique_ptr<Expression>
-    PartialExpression::evaluate(std::unique_ptr<Expression> /* obj_ref */, Parser::Scope *scope)
+    PartialExpression::evaluate(std::unique_ptr<Expression> /* obj_ref */)
     {
         Expressions::expression_vector members;
 
@@ -23,8 +23,9 @@ namespace Expressions
         {
             /** This parses the tuple containing the parameters of the lambda */
             std::vector<std::string> params = Parser::parseTuple(mTupleMembers.at(1));
+            std::shared_ptr<Parser::Scope> lambdaScope(new Parser::Scope(this->localScope));
 
-            return std::unique_ptr<Expression>(new LambdaExpression(mTupleMembers, params));
+            return std::unique_ptr<Expression>(new LambdaExpression(mTupleMembers, params, std::move(lambdaScope)));
         }
         else if (Functions::specialFormMap.find(mTupleMembers.front()) != Functions::specialFormMap.end())
         {
@@ -33,30 +34,31 @@ namespace Expressions
             for (const auto &str : mTupleMembers)
             {
                 std::unique_ptr<Expressions::Expression> expr;
-                Parser::parseSpecialForm(str, expr);
+                Parser::parseSpecialForm(str, localScope, expr);
 
                 members.push_back(std::move(expr));
             }
 
             // std::make_unique doesn't work here since it calls TupleExpression's copy constructor for some reason
-            std::unique_ptr<TupleExpression> expr(new TupleExpression(std::move(members)));
+            std::unique_ptr<TupleExpression> expr(new TupleExpression(std::move(members), std::move(localScope)));
             return expr;
         }
 
         for (const auto &str : mTupleMembers)
         {
             std::unique_ptr<Expressions::Expression> expr;
-            auto parseSuccessful = Parser::parse(str, scope, expr);
+            auto parseSuccessful = Parser::parse(str, localScope, expr);
 
             if (!parseSuccessful)
+            {
+                std::cout << "Scope:" << localScope->toString() << std::endl;
                 throw std::invalid_argument(
-                        "Parsing failed"); //TODO: Write exception for syntax errors/unsuccessful parsing.
+                        "Parsing failed: " + str); //TODO: Write exception for syntax errors/unsuccessful parsing.
+            }
 
             if (auto partialExpression = dynamic_cast<PartialExpression *>(expr.get()))
             {
-                // Not the best, but obj_ref isn't used by evaluate() so it ends up saving
-                // unnecessary pointer creation with a PartialExpression here.
-                members.push_back(std::move(partialExpression->evaluate(std::move(expr), scope)));
+                members.push_back(std::move(partialExpression->evaluate(std::move(expr))));
             }
             else
             {
@@ -64,7 +66,7 @@ namespace Expressions
             }
         }
 
-        std::unique_ptr<TupleExpression> expr(new TupleExpression(std::move(members)));
+        std::unique_ptr<TupleExpression> expr(new TupleExpression(std::move(members), std::move(localScope)));
         return std::move(expr);
     }
 
@@ -82,6 +84,6 @@ namespace Expressions
 
     std::unique_ptr<Expression> PartialExpression::clone()
     {
-        return std::unique_ptr<Expression>(new PartialExpression(*this));
+        return std::unique_ptr<Expression>(new PartialExpression(*this, this->localScope));
     }
 }

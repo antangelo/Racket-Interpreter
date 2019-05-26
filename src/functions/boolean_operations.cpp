@@ -24,7 +24,7 @@ bool compare(const std::string &comp, const boost::rational<int> &v1, const boos
 void makeCompFunction(const std::string &comp)
 {
     Functions::funcMap[comp] = [comp](Expressions::expression_vector expr,
-                                      Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+                                      std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         if (expr.size() < 2) throw std::invalid_argument("Expected at least two arguments"); //TODO: arg count
         boost::rational<int> compVal;
@@ -48,7 +48,10 @@ void makeCompFunction(const std::string &comp)
             else throw std::invalid_argument("Expected number, found " + expr[i]->toString());
         }
 
-        return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retValue));
+        return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retValue,
+                                                                                                std::shared_ptr<Parser::Scope>(
+                                                                                                        new Parser::Scope(
+                                                                                                                scope))));
     };
 }
 
@@ -64,27 +67,27 @@ void register_relational_ops()
 void register_if_form()
 {
     Functions::specialFormMap["if"] = [](Expressions::expression_vector expr,
-                                         Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+                                         std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         if (expr.size() != 3) throw std::invalid_argument("if expects 3 args");
 
-        std::unique_ptr<Expressions::Expression> test = Expressions::evaluate(std::move(expr[0]), scope);
+        std::unique_ptr<Expressions::Expression> test = Expressions::evaluate(std::move(expr[0]));
         std::unique_ptr<Expressions::Expression> result;
 
         while (!test->isValue())
         {
-            test = Expressions::evaluate(std::move(test), scope);
+            test = Expressions::evaluate(std::move(test));
         }
 
         if (auto boolVal = dynamic_cast<Expressions::BooleanValueExpression *>(test.get()))
         {
             if (boolVal->value)
             {
-                result = Expressions::evaluate(std::move(expr[1]), scope);
+                result = Expressions::evaluate(std::move(expr[1]));
             }
             else
             {
-                result = Expressions::evaluate(std::move(expr[2]), scope);
+                result = Expressions::evaluate(std::move(expr[2]));
             }
         }
         else throw std::invalid_argument("if expected boolean, found " + test->toString());
@@ -93,15 +96,15 @@ void register_if_form()
     };
 
     Functions::specialFormMap["cond"] = [](Expressions::expression_vector expr,
-                                           Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+                                           std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         Expressions::expression_vector simplifiedExpr = Expressions::expression_vector();
-        simplifiedExpr.insert(simplifiedExpr.begin(), std::move(Functions::getFormByName("cond")));
+        simplifiedExpr.insert(simplifiedExpr.begin(), std::move(Functions::getFormByName("cond", scope)));
 
         if (expr.empty()) throw std::invalid_argument("cond: Reached end without finding true condition");
 
-        std::unique_ptr<Expressions::Expression> firstCond = Expressions::evaluate(std::move(expr[0]), scope);
-        std::unique_ptr<Expressions::Expression> tupleExpr = Expressions::evaluate(std::move(firstCond), scope);
+        std::unique_ptr<Expressions::Expression> firstCond = Expressions::evaluate(std::move(expr[0]));
+        std::unique_ptr<Expressions::Expression> tupleExpr = Expressions::evaluate(std::move(firstCond));
 
         if (auto tupleCast = dynamic_cast<Expressions::TupleExpression *>(tupleExpr.get()))
         {
@@ -109,9 +112,9 @@ void register_if_form()
 
             if (!test->isValue())
             {
-                test = Expressions::evaluate(std::move(test), scope);
+                test = Expressions::evaluate(std::move(test));
                 tupleCast->mTupleMembers[0] = std::move(test);
-                Parser::parseSpecialForm(tupleCast->toString(), expr[0]);
+                Parser::parseSpecialForm(tupleCast->toString(), scope, expr[0]);
             }
             else
             {
@@ -136,7 +139,10 @@ void register_if_form()
             simplifiedExpr.insert(simplifiedExpr.end(), std::move(conditional));
         }
 
-        return std::unique_ptr<Expressions::Expression>(new Expressions::TupleExpression(std::move(simplifiedExpr)));
+        return std::unique_ptr<Expressions::Expression>(new Expressions::TupleExpression(std::move(simplifiedExpr),
+                                                                                         std::shared_ptr<Parser::Scope>(
+                                                                                                 new Parser::Scope(
+                                                                                                         scope))));
     };
 }
 
@@ -148,30 +154,32 @@ void register_boolean_ops()
     using Expressions::expression_vector;
 
     Functions::funcMap["not"] = [](expression_vector expr,
-                                   Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+                                   std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         if (expr.size() > 1) throw std::invalid_argument("not expects one argument"); //TODO: arg count
 
         if (auto bval = dynamic_cast<Expressions::BooleanValueExpression *>(expr[0].get()))
         {
-            return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(!bval->value));
+            return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(!bval->value,
+                                                                                                    std::shared_ptr<Parser::Scope>(
+                                                                                                            new Parser::Scope(
+                                                                                                                    scope))));
         }
         else throw std::invalid_argument("not expected boolean, found: " + expr[0]->toString());
     };
 
     Functions::specialFormMap["and"] = [](expression_vector expr,
-                                          Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+                                          std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         bool retVal = true;
 
         for (auto &unparsedExpression : expr)
         {
-            std::unique_ptr<Expressions::Expression> evaluated = Expressions::evaluate(std::move(unparsedExpression),
-                                                                                       scope);
+            std::unique_ptr<Expressions::Expression> evaluated = Expressions::evaluate(std::move(unparsedExpression));
 
             while (!evaluated->isValue())
             {
-                evaluated = Expressions::evaluate(std::move(evaluated), scope);
+                evaluated = Expressions::evaluate(std::move(evaluated));
             }
 
             if (auto bval = dynamic_cast<Expressions::BooleanValueExpression *>(evaluated.get()))
@@ -182,22 +190,24 @@ void register_boolean_ops()
             else throw std::invalid_argument("and expected boolean, found: " + evaluated->toString());
         }
 
-        return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retVal));
+        return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retVal,
+                                                                                                std::shared_ptr<Parser::Scope>(
+                                                                                                        new Parser::Scope(
+                                                                                                                scope))));
     };
 
     Functions::specialFormMap["or"] = [](expression_vector expr,
-                                         Parser::Scope *scope) -> std::unique_ptr<Expressions::Expression>
+                                         std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         bool retVal = false;
 
         for (auto &unparsedExpression : expr)
         {
-            std::unique_ptr<Expressions::Expression> evaluated = Expressions::evaluate(std::move(unparsedExpression),
-                                                                                       scope);
+            std::unique_ptr<Expressions::Expression> evaluated = Expressions::evaluate(std::move(unparsedExpression));
 
             while (!evaluated->isValue())
             {
-                evaluated = Expressions::evaluate(std::move(evaluated), scope);
+                evaluated = Expressions::evaluate(std::move(evaluated));
             }
 
             if (auto bval = dynamic_cast<Expressions::BooleanValueExpression *>(evaluated.get()))
@@ -208,6 +218,9 @@ void register_boolean_ops()
             else throw std::invalid_argument("or expected boolean, found: " + evaluated->toString());
         }
 
-        return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retVal));
+        return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retVal,
+                                                                                                std::shared_ptr<Parser::Scope>(
+                                                                                                        new Parser::Scope(
+                                                                                                                scope))));
     };
 }

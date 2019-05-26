@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     Functions::registerFunctions();
     bool hideSteps = true;
 
-    std::unique_ptr<Parser::Scope> globalScope(new Parser::Scope());
+    std::shared_ptr<Parser::Scope> globalScope(new Parser::Scope(nullptr));
 
     for (;;)
     {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
             else
             {
                 std::unique_ptr<Expressions::Expression> expr;
-                auto parseSuccess = Parser::parse(input, globalScope.get(), expr);
+                auto parseSuccess = Parser::parse(input, globalScope, expr);
 
                 if (!parseSuccess)
                 {
@@ -38,9 +38,7 @@ int main(int argc, char *argv[])
 
                 while (!expr->isValue())
                 {
-                    if (steps >= 100) break;
-
-                    expr = Expressions::evaluate(std::move(expr), globalScope.get());
+                    expr = Expressions::evaluate(std::move(expr));
 
                     if (dynamic_cast<Expressions::VoidValueExpression *>(expr.get()))
                     {

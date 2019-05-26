@@ -14,16 +14,16 @@ namespace Functions
     using Expressions::expression_vector;
 
     extern std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
-                                                                                        Parser::Scope *)>> funcMap;
+                                                                                        std::shared_ptr<Parser::Scope>)>> funcMap;
 
     extern std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
-                                                                                        Parser::Scope *)>> specialFormMap;
+                                                                                        std::shared_ptr<Parser::Scope>)>> specialFormMap;
 
     void registerFunctions();
 
-    std::unique_ptr<Expressions::Expression> getFormByName(const std::string &);
+    std::unique_ptr<Expressions::Expression> getFormByName(const std::string &, std::shared_ptr<Parser::Scope>);
 
-    std::unique_ptr<Expressions::Expression> getFuncByName(const std::string &);
+    std::unique_ptr<Expressions::Expression> getFuncByName(const std::string &, std::shared_ptr<Parser::Scope>);
 }
 
 #endif //RACKET_INTERPRETER_FUNCTIONS_H

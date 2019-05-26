@@ -9,13 +9,14 @@ namespace Expressions
 {
 
 /* FunctionExpression */
-    inline bool FunctionExpression::isValue()
+
+    bool FunctionExpression::isValue()
     {
         return true;
     }
 
-    inline std::unique_ptr<Expression>
-    FunctionExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref, Parser::Scope * /* scope */)
+    std::unique_ptr<Expression>
+    FunctionExpression::evaluate(std::unique_ptr<Expression> obj_ref)
     {
         return std::move(obj_ref);
     }
@@ -30,29 +31,29 @@ namespace Expressions
         return mSpecialForm;
     }
 
-    std::unique_ptr<Expression> FunctionExpression::call(Expressions::expression_vector args, Parser::Scope *scope)
+    std::unique_ptr<Expression> FunctionExpression::call(expression_vector args)
     {
-        return mFunction(std::move(args), scope);
+        return mFunction(std::move(args), localScope);
     }
 
     std::unique_ptr<Expression> FunctionExpression::clone()
     {
-        return std::unique_ptr<Expression>(new FunctionExpression(*this));
+        return std::unique_ptr<Expression>(new FunctionExpression(*this, this->localScope));
     }
 
 /* LambdaExpression */
 
-    std::unique_ptr<Expression> LambdaExpression::call(Expressions::expression_vector args, Parser::Scope *scope)
+    std::unique_ptr<Expression> LambdaExpression::call(expression_vector args)
     {
         if (mLambdaArgs.size() != args.size()) throw std::invalid_argument("Lambda arg parity mismatch");
         std::string toParser;
 
-        Parser::Scope fnScope(scope);
+        std::shared_ptr<Parser::Scope> fnScope(new Parser::Scope(localScope));
 
         for (int i = 0; i < args.size(); ++i)
         {
             /** Move all arguments into the function's scope */
-            fnScope.define(mLambdaArgs[i], std::move(args[i]));
+            fnScope->define(mLambdaArgs[i], std::move(args[i]));
         }
 
         for (int i = 2; i < mLambdaExpr.size(); ++i)
@@ -61,14 +62,14 @@ namespace Expressions
         }
 
         std::unique_ptr<Expression> expr;
-        bool success = Parser::parse(toParser, &fnScope, expr);
+        bool success = Parser::parse(toParser, fnScope, expr);
 
         if (!success) throw std::invalid_argument("Parsing failed in lambda: " + toString());
 
         if (auto pex = dynamic_cast<PartialExpression *>(expr.get()))
         {
             // Evaluate the resulting partial expression in the scope of the function.
-            expr = pex->evaluate(std::move(expr), &fnScope);
+            expr = pex->evaluate(std::move(expr));
         }
 
         return expr;
@@ -76,6 +77,6 @@ namespace Expressions
 
     std::unique_ptr<Expression> LambdaExpression::clone()
     {
-        return std::unique_ptr<Expression>(new LambdaExpression(*this));
+        return std::unique_ptr<Expression>(new LambdaExpression(*this, this->localScope));
     }
 }
