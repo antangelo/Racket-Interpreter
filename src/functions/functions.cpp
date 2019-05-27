@@ -8,6 +8,8 @@
 /* From boolean_operations.cpp */
 void register_boolean_ops();
 
+void register_math_functions();
+
 namespace Functions
 {
     std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
@@ -15,6 +17,41 @@ namespace Functions
 
     std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
                                                                                  std::shared_ptr<Parser::Scope>)>> specialFormMap;
+
+    std::unique_ptr<Expressions::Expression> display_func(expression_vector expr,
+                                                          std::shared_ptr<Parser::Scope> scope)
+    {
+        if (expr.empty()) throw std::invalid_argument("display expects at least 1 arg.");
+
+        std::cout << *expr.front();
+
+        return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression(
+                std::make_unique<Parser::Scope>(Parser::Scope(std::move(scope)))));
+    }
+
+    std::unique_ptr<Expressions::Expression> newline_func(expression_vector expr,
+                                                          std::shared_ptr<Parser::Scope> scope)
+    {
+        if (!expr.empty()) throw std::invalid_argument("newline expects no args");
+
+        std::cout << std::endl;
+
+        return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression(
+                std::make_unique<Parser::Scope>(Parser::Scope(std::move(scope)))));
+    }
+
+    std::unique_ptr<Expressions::Expression> begin_func(expression_vector expr,
+                                                        std::shared_ptr<Parser::Scope> /* scope */)
+    {
+        if (expr.empty()) throw std::invalid_argument("begin expects at least 1 arg.");
+
+        for (int i = 0; i < expr.size() - 1; i++)
+        {
+            expr[i] = Expressions::evaluate(std::move(expr[i]));
+        }
+
+        return Expressions::evaluate(std::move(expr.back()));
+    }
 
     void registerSpecialForms()
     {
@@ -90,146 +127,12 @@ namespace Functions
     void registerFunctions()
     {
         registerSpecialForms();
+        register_math_functions();
         register_boolean_ops();
 
-        funcMap["+"] = [](expression_vector expr,
-                          std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            boost::rational<int> sum = 0;
-
-            for (auto &i : expr)
-            {
-                if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(i.get()))
-                {
-                    sum += num->mValue;
-                } else throw std::invalid_argument("+ expects numerical arg, found: " + i->toString());
-            }
-
-            return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(sum,
-                                                                                                      std::make_unique<Parser::Scope>(
-                                                                                                              Parser::Scope(
-                                                                                                                      scope))));
-        };
-
-        funcMap["*"] = [](expression_vector expr,
-                          std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            boost::rational<int> product(1);
-
-            for (auto &i : expr)
-            {
-                if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(i.get()))
-                {
-                    product *= num->mValue;
-                } else throw std::invalid_argument("* expects numerical arg, found: " + i->toString());
-            }
-
-            return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(product,
-                                                                                                      std::make_unique<Parser::Scope>(
-                                                                                                              Parser::Scope(
-                                                                                                                      scope))));
-        };
-
-        funcMap["-"] = [](expression_vector expr,
-                          std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            if (expr.empty()) throw std::invalid_argument("- expected at least 1 arg.");
-
-            if (auto first = dynamic_cast<Expressions::NumericalValueExpression *>(expr.front().get()))
-            {
-                if (expr.size() == 1)
-                {
-                    return std::unique_ptr<Expressions::Expression>
-                            (new Expressions::NumericalValueExpression(-1 * first->mValue,
-                                                                       std::make_unique<Parser::Scope>(
-                                                                               Parser::Scope(scope))));
-                }
-
-                boost::rational<int> diff = first->mValue;
-
-                for (int i = 1; i < expr.size(); i++)
-                {
-                    auto &j = expr[i];
-                    if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(j.get()))
-                    {
-                        diff -= num->mValue;
-                    } else throw std::invalid_argument("- expects numerical arg, found: " + j->toString());
-                }
-
-                return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(diff,
-                                                                                                          std::make_unique<Parser::Scope>(
-                                                                                                                  Parser::Scope(
-                                                                                                                          scope))));
-            } else throw std::invalid_argument("- expects numerical arg, found: " + expr.front()->toString());
-        };
-
-        funcMap["/"] = [](expression_vector expr,
-                          std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            if (expr.empty()) throw std::invalid_argument("/ expected at least 1 arg.");
-
-            if (auto first = dynamic_cast<Expressions::NumericalValueExpression *>(expr.front().get()))
-            {
-                if (expr.size() == 1)
-                {
-                    return std::unique_ptr<Expressions::Expression>
-                            (new Expressions::NumericalValueExpression(1 / first->mValue,
-                                                                       std::make_unique<Parser::Scope>(
-                                                                               Parser::Scope(scope))));
-                }
-
-                boost::rational<int> quotient = first->mValue;
-
-                for (int i = 1; i < expr.size(); i++)
-                {
-                    auto &j = expr[i];
-                    if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(j.get()))
-                    {
-                        quotient /= num->mValue;
-                    } else throw std::invalid_argument("/ expects numerical arg, found: " + j->toString());
-                }
-
-                return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(quotient,
-                                                                                                          std::make_unique<Parser::Scope>(
-                                                                                                                  Parser::Scope(
-                                                                                                                          scope))));
-            } else throw std::invalid_argument("/ expects numerical arg, found: " + expr.front()->toString());
-        };
-
-        funcMap["display"] = [](expression_vector expr,
-                                std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            if (expr.empty()) throw std::invalid_argument("display expects at least 1 arg.");
-
-            std::cout << *expr.front();
-
-            return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression(
-                    std::make_unique<Parser::Scope>(Parser::Scope(scope))));
-        };
-
-        funcMap["newline"] = [](expression_vector expr,
-                                std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            if (!expr.empty()) throw std::invalid_argument("newline expects no args");
-
-            std::cout << std::endl;
-
-            return std::unique_ptr<Expressions::Expression>(new Expressions::VoidValueExpression(
-                    std::make_unique<Parser::Scope>(Parser::Scope(scope))));
-        };
-
-        funcMap["begin"] = [](expression_vector expr,
-                              std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
-        {
-            if (expr.empty()) throw std::invalid_argument("begin expects at least 1 arg.");
-
-            for (int i = 0; i < expr.size() - 1; i++)
-            {
-                expr[i] = Expressions::evaluate(std::move(expr[i]));
-            }
-
-            return Expressions::evaluate(std::move(expr.back()));
-        };
+        funcMap["display"] = display_func;
+        funcMap["newline"] = newline_func;
+        funcMap["begin"] = begin_func;
     }
 
     std::unique_ptr<Expressions::Expression>
