@@ -63,5 +63,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    globalScope->definitions.clear();
+
     return 0;
 }
