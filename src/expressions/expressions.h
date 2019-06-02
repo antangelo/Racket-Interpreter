@@ -6,6 +6,7 @@
 #define RACKET_INTERPRETER_EXPRESSIONS_H
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 #include <functional>
