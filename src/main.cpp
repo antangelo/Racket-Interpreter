@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "parser.h"
+#include "interpret/interpret.h"
 #include "functions/functions.h"
 
 int main(int argc, char *argv[])
@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     Functions::registerFunctions();
     bool hideSteps = true;
 
-    std::shared_ptr<Parser::Scope> globalScope(new Parser::Scope(nullptr));
+    std::shared_ptr<Expressions::Scope> globalScope(new Expressions::Scope(nullptr));
 
     for (;;)
     {
@@ -25,40 +25,33 @@ int main(int argc, char *argv[])
             if (input == "(toggle-step)") hideSteps = !hideSteps;
             else
             {
-                std::unique_ptr<Expressions::Expression> expr;
-                auto parseSuccess = Parser::parse(input, globalScope, expr);
+                auto expr = Parser::parse(input, globalScope);
+                if (!expr) continue;
 
-                if (!parseSuccess)
+                if (hideSteps)
                 {
-                    std::cout << "Invalid input: " + input << std::endl;
-                    continue;
+                    expr = Interpreter::interpret(std::move(expr));
+                    if (dynamic_cast<Expressions::VoidValueExpression *>(expr.get())) continue;
+
+                    std::cout << expr->toString() << std::endl;
                 }
-
-                int steps = 0;
-
-                while (!expr->isValue())
+                else
                 {
-                    expr = Expressions::evaluate(std::move(expr));
+                    Expressions::expression_vector steps = Interpreter::interpretSaveSteps(std::move(expr));
 
-                    if (dynamic_cast<Expressions::VoidValueExpression *>(expr.get()))
+                    for (auto &exp : steps)
                     {
-                        continue; // Don't print void values on their own
+                        if (dynamic_cast<Expressions::VoidValueExpression *>(exp.get()) ||
+                            dynamic_cast<Expressions::PartialExpression *>(exp.get()))
+                            continue;
+                        std::cout << exp->toString() << std::endl;
                     }
-
-                    if (hideSteps) continue;
-
-                    std::cout << "Step " << steps++ << std::endl;
-                    std::cout << *expr << std::endl;
                 }
-
-                // Prints output if stepping is off, since the final statement won't be printed otherwise
-                if (hideSteps && dynamic_cast<Expressions::VoidValueExpression *> (expr.get()) == nullptr)
-                    std::cout << *expr << std::endl;
             }
         }
         catch (std::exception &exception)
         {
-            std::cout << "Exception occurred: " << exception.what() << std::endl;
+            std::cout << exception.what() << std::endl;
             //throw;
         }
     }

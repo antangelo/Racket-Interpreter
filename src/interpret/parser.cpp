@@ -5,78 +5,10 @@
 #include <iostream>
 
 #include "parser.h"
-#include "functions/functions.h"
+#include "../functions/functions.h"
 
 namespace Parser
 {
-    //
-
-    bool Scope::contains(const std::string &token)
-    {
-        return definitions.find(token) != definitions.end()
-               || (parent != nullptr && parent->contains(token));
-    }
-
-    void Scope::define(const std::string &key, std::unique_ptr<Expressions::Expression> val)
-    {
-        definitions[key] = std::move(val);
-    }
-
-    std::unique_ptr<Expressions::Expression> Scope::getDefinition(const std::string &key)
-    {
-        if (definitions.find(key) != definitions.end())
-        {
-            // Don't want to give the definition itself, only a copy of it
-            return definitions[key]->clone();
-        }
-        else if (parent != nullptr && parent->contains(key))
-        {
-            return parent->getDefinition(key);
-        }
-        else throw std::invalid_argument("Key " + key + " not found in scope."); //TODO: replace invalid_argument
-    }
-
-    void Scope::defineGlobal(const std::string &key, std::unique_ptr<Expressions::Expression> val)
-    {
-        if (!this->globalScope) this->define(key, std::move(val));
-        else this->globalScope->define(key, std::move(val));
-    }
-
-    std::string Scope::toString()
-    {
-        std::string str;
-
-        for (auto &def : definitions)
-        {
-            str += " ";
-            str += def.first;
-            str += ": ";
-            str += def.second->toString();
-        }
-
-        if (parent != nullptr) str += parent->toString();
-
-        return std::move(str);
-    }
-
-    /*std::unique_ptr<Scope> Scope::clone(Scope* parent)
-    {
-        std::map<std::string, std::unique_ptr<Expressions::Expression>> cloneDefs;
-
-        for(auto& x : definitions)
-        {
-            cloneDefs[x.first] = x.second->clone(parent);
-        }
-
-        std::unique_ptr<Scope> clonedScope (new Scope(parent));
-        clonedScope->definitions = std::move(cloneDefs);
-
-        return std::move(clonedScope);
-    }*/
-
-
-    //
-
     /**
     * Gives the ending index of the first occurring tuple in the given string
     * @param tuple A string where the first character is parenOpen and containing a closing parenClose somewhere.
@@ -184,7 +116,7 @@ namespace Parser
         str = out;
     }
 
-    void parseSpecialForm(const std::string &str, const std::shared_ptr<Scope> &scope,
+    void parseSpecialForm(const std::string &str, const std::shared_ptr<Expressions::Scope> &scope,
                           std::unique_ptr<Expressions::Expression> &out)
     {
         if (Functions::specialFormMap.count(str) > 0)
@@ -193,69 +125,63 @@ namespace Parser
         }
         else
         {
-            std::unique_ptr<Scope> localScope(new Scope(scope));
+            std::unique_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             out = std::unique_ptr<Expressions::Expression>(
                     new Expressions::UnparsedExpression(str, std::move(localScope)));
         }
     }
 
-    bool parse(std::string str, const std::shared_ptr<Scope> &scope, std::unique_ptr<Expressions::Expression> &out)
+    std::unique_ptr<Expressions::Expression> parse(std::string str, const std::shared_ptr<Expressions::Scope> &scope)
     {
         if ((str.front() == '(' || str.front() == '[')
             && findTupleEnd(str) != std::string::npos)
         {
-            std::shared_ptr<Scope> localScope(new Scope(scope));
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             std::unique_ptr<Expressions::Expression> expr(new Expressions::PartialExpression(parseTuple(str),
                                                                                              std::move(localScope)));
-            out = std::move(expr);
-            return true;
+            return std::move(expr);
         }
         else if (scope != nullptr && scope->contains(str))
         {
-            out = scope->getDefinition(str);
-            return true;
+            return scope->getDefinition(str);
         }
         else if (Functions::funcMap.count(str) > 0)
         {
-            out = Functions::getFuncByName(str, scope);
-            return true;
+            return Functions::getFuncByName(str, scope);
         }
         else if (Functions::specialFormMap.count(str) > 0)
         {
-            out = Functions::getFormByName(str, scope);
-            return true;
+            return Functions::getFormByName(str, scope);
         }
         else if (str == "true")
         {
-            std::shared_ptr<Scope> localScope(new Scope(scope));
-            out = std::unique_ptr<Expressions::Expression>(
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::unique_ptr<Expressions::Expression>(
                     new Expressions::BooleanValueExpression(true, std::move(localScope)));
-            return true;
         }
         else if (str == "false")
         {
-            std::shared_ptr<Scope> localScope(new Scope(scope));
-            out = std::unique_ptr<Expressions::Expression>(
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::unique_ptr<Expressions::Expression>(
                     new Expressions::BooleanValueExpression(false, std::move(localScope)));
-            return true;
         }
-        else
+        else if (isdigit(str[0]))
         {
             try
             {
-                std::unique_ptr<Scope> localScope(new Scope(scope));
+                std::unique_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
                 std::unique_ptr<Expressions::Expression> expr(
                         new Expressions::NumericalValueExpression(str, std::move(localScope)));
-                out = std::move(expr);
-                return true;
+                return std::move(expr);
             }
             catch (std::invalid_argument &exception)
             {
-                std::cout << exception.what() << std::endl;
-                std::cout << str << std::endl;
+                std::cerr << "Unable to parse number " + str << std::endl;
+                std::cerr << exception.what() << std::endl;
             }
         }
+        else throw std::invalid_argument("Invalid expression: " + str);
 
-        return false;
+        return nullptr;
     }
 }

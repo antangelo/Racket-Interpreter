@@ -3,7 +3,7 @@
 //
 
 #include "functions.h"
-#include "../parser.h"
+#include "../interpret/parser.h"
 
 bool compare(const std::string &comp, const boost::rational<int> &v1, const boost::rational<int> &v2)
 {
@@ -24,7 +24,7 @@ bool compare(const std::string &comp, const boost::rational<int> &v1, const boos
 void makeCompFunction(const std::string &comp)
 {
     Functions::funcMap[comp] = [comp](Expressions::expression_vector expr,
-                                      std::shared_ptr<Parser::Scope> scope) -> std::unique_ptr<Expressions::Expression>
+                                      std::shared_ptr<Expressions::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         if (expr.size() < 2) throw std::invalid_argument("Expected at least two arguments"); //TODO: arg count
         boost::rational<int> compVal;
@@ -49,8 +49,8 @@ void makeCompFunction(const std::string &comp)
         }
 
         return std::unique_ptr<Expressions::Expression>(new Expressions::BooleanValueExpression(retValue,
-                                                                                                std::shared_ptr<Parser::Scope>(
-                                                                                                        new Parser::Scope(
+                                                                                                std::shared_ptr<Expressions::Scope>(
+                                                                                                        new Expressions::Scope(
                                                                                                                 scope))));
     };
 }
@@ -65,7 +65,7 @@ void register_relational_ops()
 }
 
 std::unique_ptr<Expressions::Expression>
-if_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> /* scope */)
+if_func(Expressions::expression_vector expr, const std::shared_ptr<Expressions::Scope> & /* scope */)
 {
     if (expr.size() != 3) throw std::invalid_argument("if expects 3 args");
 
@@ -94,7 +94,7 @@ if_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> /* s
 }
 
 std::unique_ptr<Expressions::Expression>
-cond_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> scope)
+cond_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scope> scope)
 {
     Expressions::expression_vector simplifiedExpr = Expressions::expression_vector();
     simplifiedExpr.insert(simplifiedExpr.begin(), std::move(Functions::getFormByName("cond", scope)));
@@ -138,14 +138,14 @@ cond_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> sc
     }
 
     return std::unique_ptr<Expressions::Expression>(new Expressions::TupleExpression(std::move(simplifiedExpr),
-                                                                                     std::shared_ptr<Parser::Scope>(
-                                                                                             new Parser::Scope(
+                                                                                     std::shared_ptr<Expressions::Scope>(
+                                                                                             new Expressions::Scope(
                                                                                                      std::move(
                                                                                                              scope)))));
 }
 
 std::unique_ptr<Expressions::Expression>
-not_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> scope)
+not_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scope> scope)
 {
     if (expr.size() > 1) throw std::invalid_argument("not expects one argument"); //TODO: arg count
 
@@ -153,15 +153,15 @@ not_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> sco
     {
         return std::unique_ptr<Expressions::Expression>
                 (new Expressions::BooleanValueExpression(!bval->value,
-                                                         std::shared_ptr<Parser::Scope>(
-                                                                 new Parser::Scope(
+                                                         std::shared_ptr<Expressions::Scope>(
+                                                                 new Expressions::Scope(
                                                                          std::move(scope)))));
     }
     else throw std::invalid_argument("not expected boolean, found: " + expr[0]->toString());
 }
 
 std::unique_ptr<Expressions::Expression>
-and_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> scope)
+and_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scope> scope)
 {
     bool retVal = true;
 
@@ -184,14 +184,14 @@ and_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> sco
 
     return std::unique_ptr<Expressions::Expression>
             (new Expressions::BooleanValueExpression(retVal,
-                                                     std::shared_ptr<Parser::Scope>(
-                                                             new Parser::Scope(
+                                                     std::shared_ptr<Expressions::Scope>(
+                                                             new Expressions::Scope(
                                                                      std::move(
                                                                              scope)))));
 }
 
 std::unique_ptr<Expressions::Expression>
-or_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> scope)
+or_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scope> scope)
 {
     bool retVal = false;
 
@@ -214,8 +214,8 @@ or_func(Expressions::expression_vector expr, std::shared_ptr<Parser::Scope> scop
 
     return std::unique_ptr<Expressions::Expression>
             (new Expressions::BooleanValueExpression(retVal,
-                                                     std::shared_ptr<Parser::Scope>(
-                                                             new Parser::Scope(
+                                                     std::shared_ptr<Expressions::Scope>(
+                                                             new Expressions::Scope(
                                                                      std::move(scope)))));
 }
 

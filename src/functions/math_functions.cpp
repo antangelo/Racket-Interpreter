@@ -3,10 +3,10 @@
 //
 
 #include "functions.h"
-#include "../parser.h"
+#include "../interpret/parser.h"
 
 typedef std::unique_ptr<Expressions::Expression> expr_ptr;
-typedef std::shared_ptr<Parser::Scope> scope_ptr;
+typedef std::shared_ptr<Expressions::Scope> scope_ptr;
 using Expressions::expression_vector;
 
 expr_ptr plus_func(expression_vector expr, scope_ptr scope)
@@ -24,8 +24,8 @@ expr_ptr plus_func(expression_vector expr, scope_ptr scope)
 
     return std::unique_ptr<Expressions::Expression>
             (new Expressions::NumericalValueExpression(sum,
-                                                       std::make_unique<Parser::Scope>(
-                                                               Parser::Scope(
+                                                       std::make_unique<Expressions::Scope>(
+                                                               Expressions::Scope(
                                                                        std::move(scope)))));
 }
 
@@ -39,8 +39,8 @@ expr_ptr sub_func(expression_vector expr, scope_ptr scope)
         {
             return std::unique_ptr<Expressions::Expression>
                     (new Expressions::NumericalValueExpression(-1 * first->mValue,
-                                                               std::make_unique<Parser::Scope>(
-                                                                       Parser::Scope(std::move(scope)))));
+                                                               std::make_unique<Expressions::Scope>(
+                                                                       Expressions::Scope(std::move(scope)))));
         }
 
         boost::rational<int> diff = first->mValue;
@@ -57,8 +57,8 @@ expr_ptr sub_func(expression_vector expr, scope_ptr scope)
 
         return std::unique_ptr<Expressions::Expression>
                 (new Expressions::NumericalValueExpression(diff,
-                                                           std::make_unique<Parser::Scope>(
-                                                                   Parser::Scope(
+                                                           std::make_unique<Expressions::Scope>(
+                                                                   Expressions::Scope(
                                                                            std::move(scope)))));
     }
     else throw std::invalid_argument("- expects numerical arg, found: " + expr.front()->toString());
@@ -79,8 +79,8 @@ expr_ptr mult_func(expression_vector expr, scope_ptr scope)
 
     return std::unique_ptr<Expressions::Expression>
             (new Expressions::NumericalValueExpression(product,
-                                                       std::make_unique<Parser::Scope>(
-                                                               Parser::Scope(
+                                                       std::make_unique<Expressions::Scope>(
+                                                               Expressions::Scope(
                                                                        std::move(scope)))));
 }
 
@@ -94,8 +94,8 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
         {
             return std::unique_ptr<Expressions::Expression>
                     (new Expressions::NumericalValueExpression(1 / first->mValue,
-                                                               std::make_unique<Parser::Scope>(
-                                                                       Parser::Scope(std::move(scope)))));
+                                                               std::make_unique<Expressions::Scope>(
+                                                                       Expressions::Scope(std::move(scope)))));
         }
 
         boost::rational<int> quotient = first->mValue;
@@ -111,8 +111,8 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
         }
 
         return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression(quotient,
-                                                                                                  std::make_unique<Parser::Scope>(
-                                                                                                          Parser::Scope(
+                                                                                                  std::make_unique<Expressions::Scope>(
+                                                                                                          Expressions::Scope(
                                                                                                                   std::move(
                                                                                                                           scope)))));
     }

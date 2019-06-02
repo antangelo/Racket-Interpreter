@@ -2,10 +2,60 @@
 // Created by Antonio on 2019-01-09.
 //
 
-#include "../parser.h"
+#include "../interpret/parser.h"
 
 namespace Expressions
 {
+    bool Scope::contains(const std::string &token)
+    {
+        return definitions.find(token) != definitions.end()
+               || (parent != nullptr && parent->contains(token));
+    }
+
+    void Scope::define(const std::string &key, std::unique_ptr<Expressions::Expression> val)
+    {
+        definitions[key] = std::move(val);
+    }
+
+    std::unique_ptr<Expressions::Expression> Scope::getDefinition(const std::string &key)
+    {
+        if (definitions.find(key) != definitions.end())
+        {
+            // Don't want to give the definition itself, only a copy of it
+            return definitions[key]->clone();
+        }
+        else if (parent != nullptr && parent->contains(key))
+        {
+            return parent->getDefinition(key);
+        }
+        else throw std::invalid_argument("Key " + key + " not found in scope."); //TODO: replace invalid_argument
+    }
+
+    void Scope::defineGlobal(const std::string &key, std::unique_ptr<Expressions::Expression> val)
+    {
+        if (!this->globalScope) this->define(key, std::move(val));
+        else this->globalScope->define(key, std::move(val));
+    }
+
+    std::string Scope::toString()
+    {
+        std::string str;
+
+        for (auto &def : definitions)
+        {
+            str += " ";
+            str += def.first;
+            str += ": ";
+            str += def.second->toString();
+        }
+
+        if (parent != nullptr) str += parent->toString();
+
+        return std::move(str);
+    }
+
+    /* Expression */
+
     std::ostream &operator<<(std::ostream &stream, const Expression &expr)
     {
         stream << expr.toString();
@@ -27,11 +77,8 @@ namespace Expressions
 
     std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> /* obj_ref*/)
     {
-        std::unique_ptr<Expression> expr;
-
-        bool b = Parser::parse(mContents, localScope, expr);
-
-        if (!b) throw std::invalid_argument("Parsing failed in expression: " + mContents);
+        auto expr = Parser::parse(mContents, localScope);
+        if (!expr) throw std::invalid_argument("Parsing failed in expression: " + mContents);
 
         return std::move(expr);
     }

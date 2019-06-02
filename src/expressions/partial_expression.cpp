@@ -3,7 +3,7 @@
 //
 
 #include "expressions.h"
-#include "../parser.h"
+#include "../interpret/parser.h"
 #include "../functions/functions.h"
 
 namespace Expressions
@@ -23,7 +23,7 @@ namespace Expressions
         {
             /** This parses the tuple containing the parameters of the lambda */
             std::vector<std::string> params = Parser::parseTuple(mTupleMembers.at(1));
-            std::shared_ptr<Parser::Scope> lambdaScope(new Parser::Scope(this->localScope));
+            std::shared_ptr<Expressions::Scope> lambdaScope(new Expressions::Scope(this->localScope));
 
             return std::unique_ptr<Expression>(new LambdaExpression(mTupleMembers, params, std::move(lambdaScope)));
         }
@@ -46,10 +46,9 @@ namespace Expressions
 
         for (const auto &str : mTupleMembers)
         {
-            std::unique_ptr<Expressions::Expression> expr;
-            auto parseSuccessful = Parser::parse(str, localScope, expr);
+            auto expr = Parser::parse(str, localScope);
 
-            if (!parseSuccessful)
+            if (!expr)
             {
                 std::cout << "Scope:" << localScope->toString() << std::endl;
                 throw std::invalid_argument(

@@ -3,7 +3,7 @@
 //
 
 #include "expressions.h"
-#include "../parser.h"
+#include "../interpret/parser.h"
 
 namespace Expressions
 {
@@ -48,7 +48,7 @@ namespace Expressions
         if (mLambdaArgs.size() != args.size()) throw std::invalid_argument("Lambda arg parity mismatch");
         std::string toParser;
 
-        std::shared_ptr<Parser::Scope> fnScope(new Parser::Scope(localScope));
+        std::shared_ptr<Expressions::Scope> fnScope(new Expressions::Scope(localScope));
 
         for (int i = 0; i < args.size(); ++i)
         {
@@ -61,10 +61,9 @@ namespace Expressions
             toParser += mLambdaExpr[i];
         }
 
-        std::unique_ptr<Expression> expr;
-        bool success = Parser::parse(toParser, fnScope, expr);
+        auto expr = Parser::parse(toParser, fnScope);
 
-        if (!success) throw std::invalid_argument("Parsing failed in lambda: " + toString());
+        if (!expr) throw std::invalid_argument("Parsing failed in lambda: " + toString());
 
         if (auto pex = dynamic_cast<PartialExpression *>(expr.get()))
         {
