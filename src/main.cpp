@@ -26,7 +26,6 @@ int main(int argc, char *argv[])
             else
             {
                 auto expr = Parser::parse(input, globalScope);
-                if (!expr) continue;
 
                 if (hideSteps)
                 {

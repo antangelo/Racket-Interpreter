@@ -7,13 +7,12 @@
 
 #include <string>
 #include <list>
-#include <functional>
 
 #include "../expressions/expressions.h"
 
 namespace Parser
 {
-    std::vector<std::string> parseTuple(std::string);
+    std::vector<std::string> parseTuple(const std::string &);
 
     void replaceInScope(std::string &, const std::string &, const std::string &);
 

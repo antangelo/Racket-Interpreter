@@ -9,70 +9,48 @@
 
 namespace Parser
 {
-    /**
-    * Gives the ending index of the first occurring tuple in the given string
-    * @param tuple A string where the first character is parenOpen and containing a closing parenClose somewhere.
-    * @param parenOpen The opening parenthesis character (e.g. '(')
-    * @param parenClose The closing parenthesis character (e.g. ')')
-    * @return The index of the parenClose closing the tuple opened by the first character, or 0 if it cannot be found.
-    */
-    size_t findTupleEnd(std::string tuple, char parenOpen, char parenClose)
+    std::vector<std::string> parseTuple(const std::string &str)
     {
-        int tupleCount = 0;
+        int nestedTupleCount = 0;
+        std::vector<std::string> rtn;
+        std::string elem;
 
-        for (size_t index = 0; index < tuple.size(); index++)
+        for (auto &chr : str)
         {
-            if (tuple[index] == parenOpen) tupleCount++;
-            else if (tuple[index] == parenClose) tupleCount--;
-
-            /* Based on the assumption that the first character is a '(',
-             * this won't be true until we've found the end index*/
-            if (tupleCount == 0) return index;
-        }
-
-        return std::string::npos;
-    }
-
-    size_t findTupleEnd(std::string tuple)
-    {
-        return findTupleEnd(std::move(tuple), '(', ')');
-    }
-
-    /**
-     *
-     * @param str A string where the first character is '('
-     * @return
-     */
-    std::vector<std::string> parseTuple(std::string str)
-    {
-        /* Remove the opening parenthesis with erase */
-        if (str[0] == '(' || str[0] == '[') str.erase(0, 1);
-
-        //std::string expr1 = str.substr(0, str.find(')'));
-        std::vector<std::string> tupleElements;
-
-        /* Tokenize */
-        size_t index = 0;
-        while ((index = str.find(' ')) != std::string::npos)
-        {
-            if (str[0] == '(' || str[0] == '[')
+            if (nestedTupleCount == 1 && (chr == ')' || chr == ']'))
             {
-                /* findTupleEnd produces the index of the ending ')', need to add
-                 * one since substr is exclusive on the ending boundary. */
-                char openParen = str[0];
-                char closeParen = str[0] == '(' ? ')' : ']';
-                index = findTupleEnd(str, openParen, closeParen) + 1;
+                if (!elem.empty()) rtn.push_back(elem);
+
+                return rtn;
             }
 
-            tupleElements.push_back(str.substr(0, index));
-            str.erase(0, index + 1);
+            if (chr == ')' || chr == ']')
+            {
+                --nestedTupleCount;
+
+                // No need for the continue shown below,
+                // The above condition deals with it for us.
+                // It will skip the end parenthesis if it is the last one.
+            }
+            else if (chr == '(' || chr == '[')
+            {
+                ++nestedTupleCount;
+
+                if (nestedTupleCount <= 1) continue;
+            }
+            else if (nestedTupleCount == 1 && (chr == ' ' || chr == '\n'))
+            {
+                if (elem.empty()) continue;
+
+                rtn.push_back(elem);
+                elem = "";
+                continue;
+            }
+
+            elem += chr;
         }
 
-        /* Remove the last character, since it'll be either a whitespace or ')' and is useless. */
-        std::string remainder = str.substr(0, str.size() - 1);
-        if (!remainder.empty()) tupleElements.push_back(remainder);
-
-        return tupleElements;
+        throw std::invalid_argument("Tuple \"" + str + "\" is never closed.");
     }
 
     /**
@@ -133,8 +111,7 @@ namespace Parser
 
     std::unique_ptr<Expressions::Expression> parse(std::string str, const std::shared_ptr<Expressions::Scope> &scope)
     {
-        if ((str.front() == '(' || str.front() == '[')
-            && findTupleEnd(str) != std::string::npos)
+        if (str.front() == '(' || str.front() == '[')
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             std::unique_ptr<Expressions::Expression> expr(new Expressions::PartialExpression(parseTuple(str),
@@ -180,8 +157,7 @@ namespace Parser
                 std::cerr << exception.what() << std::endl;
             }
         }
-        else throw std::invalid_argument("Invalid expression: " + str);
 
-        return nullptr;
+        throw std::invalid_argument("Invalid expression: " + str);
     }
 }

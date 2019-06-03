@@ -78,8 +78,6 @@ namespace Expressions
     std::unique_ptr<Expression> UnparsedExpression::evaluate(std::unique_ptr<Expressions::Expression> /* obj_ref*/)
     {
         auto expr = Parser::parse(mContents, localScope);
-        if (!expr) throw std::invalid_argument("Parsing failed in expression: " + mContents);
-
         return std::move(expr);
     }
 

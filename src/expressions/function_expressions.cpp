@@ -63,8 +63,6 @@ namespace Expressions
 
         auto expr = Parser::parse(toParser, fnScope);
 
-        if (!expr) throw std::invalid_argument("Parsing failed in lambda: " + toString());
-
         if (auto pex = dynamic_cast<PartialExpression *>(expr.get()))
         {
             // Evaluate the resulting partial expression in the scope of the function.

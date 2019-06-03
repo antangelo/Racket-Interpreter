@@ -48,13 +48,6 @@ namespace Expressions
         {
             auto expr = Parser::parse(str, localScope);
 
-            if (!expr)
-            {
-                std::cout << "Scope:" << localScope->toString() << std::endl;
-                throw std::invalid_argument(
-                        "Parsing failed: " + str); //TODO: Write exception for syntax errors/unsuccessful parsing.
-            }
-
             if (auto partialExpression = dynamic_cast<PartialExpression *>(expr.get()))
             {
                 members.push_back(std::move(partialExpression->evaluate(std::move(expr))));
