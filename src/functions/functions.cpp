@@ -5,10 +5,10 @@
 #include "functions.h"
 #include "../interpret/parser.h"
 
-/* From boolean_operations.cpp */
 void register_boolean_ops();
-
 void register_math_functions();
+
+void register_testing_functions();
 
 namespace Functions
 {
@@ -131,6 +131,7 @@ namespace Functions
 
         register_math_functions();
         register_boolean_ops();
+        register_testing_functions();
 
         funcMap["display"] = display_func;
         funcMap["newline"] = newline_func;
