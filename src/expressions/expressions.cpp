@@ -37,6 +37,11 @@ namespace Expressions
         else this->globalScope->define(key, std::move(val));
     }
 
+    void Scope::clear()
+    {
+        this->definitions.clear();
+    }
+
     std::string Scope::toString()
     {
         std::string str;

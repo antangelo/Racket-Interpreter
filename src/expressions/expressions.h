@@ -35,6 +35,8 @@ namespace Expressions
 
         void defineGlobal(const std::string &, std::unique_ptr<Expressions::Expression>);
 
+        void clear();
+
         std::unique_ptr<Expressions::Expression> getDefinition(const std::string &);
 
         std::string toString();
