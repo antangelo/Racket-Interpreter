@@ -52,7 +52,6 @@ void repl(std::shared_ptr<Expressions::Scope> &globalScope)
 
 int main(int argc, char *argv[])
 {
-    std::cout << "Racket Interpreter Alpha 1" << std::endl;
     std::cout << "Run '(exit)' to exit." << std::endl;
 
     Functions::registerFunctions();

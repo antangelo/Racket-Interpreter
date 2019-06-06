@@ -15,10 +15,10 @@ if (Boost_FOUND)
 
 endif ()
 
-add_executable(Racket_Interpreter src/main.cpp src/interpret/parser.cpp src/interpret/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp src/functions/boolean_operations.cpp src/functions/math_functions.cpp src/interpret/interpret.cpp src/interpret/interpret.h src/functions/testing_functions.cpp)
+add_executable(racquet src/main.cpp src/interpret/parser.cpp src/interpret/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp src/functions/boolean_operations.cpp src/functions/math_functions.cpp src/interpret/interpret.cpp src/interpret/interpret.h src/functions/testing_functions.cpp)
 
 if (Boost_FOUND)
 
-    target_link_libraries(Racket_Interpreter ${Boost_LIBRARIES})
+    target_link_libraries(racquet ${Boost_LIBRARIES})
 
 endif ()
