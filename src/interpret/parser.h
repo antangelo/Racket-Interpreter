@@ -12,6 +12,8 @@
 
 namespace Parser
 {
+    size_t findTupleEnd(const std::string &tuple);
+
     std::vector<std::string> parseTuple(const std::string &);
 
     void replaceInScope(std::string &, const std::string &, const std::string &);

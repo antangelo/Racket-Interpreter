@@ -9,6 +9,28 @@
 
 namespace Parser
 {
+    /**
+    * Gives the ending index of the first occurring tuple in the given string
+    * @param tuple A string where the first character is parenOpen and containing a closing parenClose somewhere.
+    * @return The index of the parenClose closing the tuple opened by the first character, or 0 if it cannot be found.
+    */
+    size_t findTupleEnd(const std::string &tuple)
+    {
+        int tupleCount = 0;
+        if (tuple[0] != '(' && tuple[0] != '[') return 0;
+
+        for (size_t index = 0; index < tuple.size(); ++index)
+        {
+            char chr = tuple[index];
+            if (chr == '(' || chr == '[') tupleCount++;
+            else if (chr == ')' || chr == ']') tupleCount--;
+
+            if (tupleCount == 0) return index;
+        }
+
+        return std::string::npos;
+    }
+
     std::vector<std::string> parseTuple(const std::string &str)
     {
         int nestedTupleCount = 0;
@@ -116,6 +138,12 @@ namespace Parser
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             std::unique_ptr<Expressions::Expression> expr(new Expressions::PartialExpression(parseTuple(str),
                                                                                              std::move(localScope)));
+            return std::move(expr);
+        }
+        else if (str == "#lang racket")
+        {
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            std::unique_ptr<Expressions::Expression> expr(new Expressions::VoidValueExpression(localScope));
             return std::move(expr);
         }
         else if (scope != nullptr && scope->contains(str))
