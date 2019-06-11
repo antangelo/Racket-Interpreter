@@ -1,21 +1,18 @@
-#include <iostream>
-
+#include "args/args.h"
 #include "interpret/interpret.h"
 #include "functions/functions.h"
 
-void repl(std::shared_ptr<Expressions::Scope> &globalScope);
-
 int main(int argc, char *argv[])
 {
-    std::cout << "Run '(exit)' to exit." << std::endl;
-
     Functions::registerFunctions();
-
     std::shared_ptr<Expressions::Scope> globalScope(new Expressions::Scope(nullptr));
 
-    repl(globalScope);
+    CLI::parseCmdArgs(argc, argv, globalScope);
+
+    std::cout << "Run '(exit)' to exit." << std::endl;
+
+    Interpreter::repl(std::cin, globalScope, false);
 
     globalScope->clear();
-
     return 0;
 }

@@ -12,6 +12,8 @@ namespace Interpreter
     std::unique_ptr<Expressions::Expression> interpret(std::unique_ptr<Expressions::Expression>);
 
     Expressions::expression_vector interpretSaveSteps(std::unique_ptr<Expressions::Expression>);
+
+    void repl(std::istream &, std::shared_ptr<Expressions::Scope> &, const bool &);
 }
 
 #endif //RACKET_INTERPRETER_INTERPRET_H

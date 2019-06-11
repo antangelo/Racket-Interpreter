@@ -3,7 +3,7 @@ project(Racket_Interpreter)
 
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(Boost 1.57.0 COMPONENTS system filesystem REQUIRED)
+find_package(Boost 1.57.0 COMPONENTS system filesystem program_options REQUIRED)
 
 if (Boost_FOUND)
 
@@ -15,7 +15,7 @@ if (Boost_FOUND)
 
 endif ()
 
-add_executable(racquet src/main.cpp src/interpret/parser.cpp src/interpret/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp src/functions/boolean_operations.cpp src/functions/math_functions.cpp src/interpret/interpret.cpp src/interpret/interpret.h src/functions/testing_functions.cpp src/repl.cpp)
+add_executable(racquet src/main.cpp src/interpret/parser.cpp src/interpret/parser.h src/functions/functions.cpp src/functions/functions.h src/expressions/expressions.cpp src/expressions/expressions.h src/expressions/partial_expression.cpp src/expressions/tuple_expression.cpp src/expressions/function_expressions.cpp src/functions/boolean_operations.cpp src/functions/math_functions.cpp src/interpret/interpret.cpp src/interpret/interpret.h src/functions/testing_functions.cpp src/interpret/repl.cpp src/args/args.cpp src/args/args.h)
 
 if (Boost_FOUND)
 
