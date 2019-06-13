@@ -121,6 +121,28 @@ namespace Expressions
         return std::unique_ptr<Expression>(new NumericalValueExpression(*this, this->localScope));
     }
 
+    /* InexactNumberExpression */
+
+    bool InexactNumberExpression::isValue()
+    {
+        return true;
+    }
+
+    std::unique_ptr<Expression> InexactNumberExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref)
+    {
+        return std::move(obj_ref);
+    }
+
+    std::string InexactNumberExpression::toString() const
+    {
+        return std::to_string(this->value);
+    }
+
+    std::unique_ptr<Expression> InexactNumberExpression::clone()
+    {
+        return std::make_unique<InexactNumberExpression>(InexactNumberExpression(this->value, this->localScope));
+    }
+
     /* VoidValueExpression */
 
     bool VoidValueExpression::isValue()

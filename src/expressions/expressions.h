@@ -349,6 +349,26 @@ namespace Expressions
         }
     };
 
+    class InexactNumberExpression : public Expression
+    {
+    public:
+        double value;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit InexactNumberExpression(double value, std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope))
+        {
+            this->value = value;
+        }
+    };
+
     class VoidValueExpression : public Expression
     {
     public:
