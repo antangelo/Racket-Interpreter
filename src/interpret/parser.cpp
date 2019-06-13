@@ -140,7 +140,7 @@ namespace Parser
                                                                                              std::move(localScope)));
             return std::move(expr);
         }
-        else if (str == "#lang racket")
+        else if (str[0] == '#')
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             std::unique_ptr<Expressions::Expression> expr(new Expressions::VoidValueExpression(localScope));
@@ -170,7 +170,7 @@ namespace Parser
             return std::unique_ptr<Expressions::Expression>(
                     new Expressions::BooleanValueExpression(false, std::move(localScope)));
         }
-        else if (isdigit(str[0]))
+        else if (isdigit(str[0]) || (str[0] == '-' && isdigit(str[1])))
         {
             try
             {
