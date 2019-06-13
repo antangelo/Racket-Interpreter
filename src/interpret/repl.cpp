@@ -6,18 +6,17 @@
 
 namespace Interpreter
 {
-
     std::string read(std::istream &inputStream)
     {
         std::string out, input;
         std::getline(inputStream, input);
-        out += input;
+        if (input[0] != ';') out += input;
 
-        while (std::cin && Parser::findTupleEnd(out) == std::string::npos)
+        while (inputStream && Parser::findTupleEnd(out) == std::string::npos)
         {
             out += "\n";
             std::getline(inputStream, input);
-            out += input;
+            if (input[0] != ';') out += input;
         }
 
         return out;
