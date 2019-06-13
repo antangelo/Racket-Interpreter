@@ -341,6 +341,20 @@ namespace Expressions
             mValue = boost::rational<int>(numerator, denominator);
         }
 
+        explicit NumericalValueExpression(double value, std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope))
+        {
+            int denominator = 1;
+
+            while (value - (int) value != 0)
+            {
+                value *= 10;
+                denominator *= 10;
+            }
+
+            mValue = boost::rational<int>((int) value, denominator);
+        }
+
     private:
         NumericalValueExpression(const NumericalValueExpression &old_expr, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope))

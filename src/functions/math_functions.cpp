@@ -200,11 +200,7 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
     }
 
     return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
-                                                            (quotient,
-                                                             std::make_unique<Expressions::Scope>(
-                                                                     Expressions::Scope(
-                                                                             std::move(
-                                                                                     scope)))));
+                                                            (quotient, std::move(scope)));
 }
 
 expr_ptr funcSqrt(expression_vector args, scope_ptr scope)
@@ -217,7 +213,7 @@ expr_ptr funcSqrt(expression_vector args, scope_ptr scope)
     {
         result = sqrt(boost::rational_cast<double>(rational->mValue));
     }
-    else if (auto db = dynamic_cast<Expressions::InexactNumberExpression * >(args.front().get()))
+    else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args.front().get()))
     {
         result = sqrt(db->value);
     }
@@ -227,6 +223,69 @@ expr_ptr funcSqrt(expression_vector args, scope_ptr scope)
             (Expressions::InexactNumberExpression(result, std::move(scope)));
 }
 
+expr_ptr funcSqr(expression_vector args, scope_ptr scope)
+{
+    if (args.size() != 1) throw std::invalid_argument("sqr expects one arg");
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args.front().get()))
+    {
+        boost::rational<int> result = rational->mValue * rational->mValue;
+        return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
+                                                                (result, std::move(scope)));
+    }
+    else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args.front().get()))
+    {
+        double result = db->value * db->value;
+        return std::make_unique<Expressions::InexactNumberExpression>
+                (Expressions::InexactNumberExpression(result, std::move(scope)));
+    }
+    else throw std::invalid_argument("sqrt expected number, found " + args.front()->toString());
+}
+
+expr_ptr funcExpt(expression_vector args, scope_ptr scope)
+{
+    if (args.size() != 2) throw std::invalid_argument("expt expects two args");
+
+    double base, exponent, result;
+    bool exactBase = false, exactExp = false;
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        base = boost::rational_cast<double>(rational->mValue);
+        exactBase = true;
+    }
+    else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        base = db->value;
+    }
+    else throw std::invalid_argument("sqrt expected number, found " + args[0]->toString());
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[1].get()))
+    {
+        exponent = boost::rational_cast<double>(rational->mValue);
+        exactExp = true;
+    }
+    else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args[1].get()))
+    {
+        exponent = db->value;
+    }
+    else throw std::invalid_argument("sqrt expected number, found " + args[1]->toString());
+
+    result = pow(base, exponent);
+
+    if (exactBase && exactExp)
+    {
+        return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
+                                                                (result, std::move(scope)));
+    }
+    else
+    {
+        return std::make_unique<Expressions::InexactNumberExpression>
+                (Expressions::InexactNumberExpression(result, std::move(scope)));
+    }
+}
+
+
 void register_math_functions()
 {
     Functions::funcMap["+"] = plus_func;
@@ -234,5 +293,7 @@ void register_math_functions()
     Functions::funcMap["*"] = mult_func;
     Functions::funcMap["/"] = div_func;
     Functions::funcMap["sqrt"] = funcSqrt;
+    Functions::funcMap["sqr"] = funcSqr;
+    Functions::funcMap["expt"] = funcExpt;
 }
 
