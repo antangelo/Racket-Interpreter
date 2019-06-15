@@ -62,6 +62,9 @@ namespace Functions
         std::string name = fnSignature[0];
         fnSignature.erase(fnSignature.begin());
 
+        if (scope->contains(name) || funcMap.count(name) > 0 || specialFormMap.count(name) > 0)
+            throw std::invalid_argument("Error: Scope already contains key for " + name);
+
         /** Next, we need to parse the lambda body */
         if (auto body = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
         {
@@ -111,6 +114,9 @@ namespace Functions
             name = raw->toString();
         }
         else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[0]->toString());
+
+        if (scope->contains(name) || funcMap.count(name) > 0 || specialFormMap.count(name) > 0)
+            throw std::invalid_argument("Error: Scope already contains key for " + name);
 
         if (auto raw = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
         {
