@@ -285,6 +285,109 @@ expr_ptr funcExpt(expression_vector args, scope_ptr scope)
     }
 }
 
+expr_ptr funcMax(expression_vector args, scope_ptr scope)
+{
+    if (args.empty()) throw std::invalid_argument("Error: Expected at least 1 argument, but found none.");
+
+    boost::rational<int> rationalMax;
+    double inexactMax = 0;
+    bool firstRational = true, firstInexact = true;
+
+    for (auto &expr : args)
+    {
+        if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(expr.get()))
+        {
+            if (firstRational)
+            {
+                rationalMax = rational->mValue;
+                firstRational = false;
+            }
+            else
+            {
+                rationalMax = rational->mValue > rationalMax ? rational->mValue : rationalMax;
+            }
+        }
+        else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(expr.get()))
+        {
+            if (firstInexact)
+            {
+                inexactMax = inexact->value;
+                firstInexact = false;
+            }
+            else
+            {
+                inexactMax = inexact->value > inexactMax ? inexact->value : inexactMax;
+            }
+        }
+        else throw std::invalid_argument("Expected number, found " + expr->toString());
+    }
+
+    // If we came across an inexact number, then firstInexact is false
+    if (!firstInexact)
+    {
+        auto rationalM = boost::rational_cast<double>(rationalMax);
+        return std::make_unique<Expressions::InexactNumberExpression>
+                (Expressions::InexactNumberExpression(
+                        (rationalM > inexactMax && !firstRational) ? rationalM : inexactMax,
+                        std::move(scope)
+                ));
+    }
+
+    return std::make_unique<Expressions::NumericalValueExpression>
+            (Expressions::NumericalValueExpression(rationalMax, std::move(scope)));
+}
+
+expr_ptr funcMin(expression_vector args, scope_ptr scope)
+{
+    if (args.empty()) throw std::invalid_argument("Error: Expected at least 1 argument, but found none.");
+
+    boost::rational<int> rationalMax;
+    double inexactMax = 0;
+    bool firstRational = true, firstInexact = true;
+
+    for (auto &expr : args)
+    {
+        if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(expr.get()))
+        {
+            if (firstRational)
+            {
+                rationalMax = rational->mValue;
+                firstRational = false;
+            }
+            else
+            {
+                rationalMax = rational->mValue < rationalMax ? rational->mValue : rationalMax;
+            }
+        }
+        else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(expr.get()))
+        {
+            if (firstInexact)
+            {
+                inexactMax = inexact->value;
+                firstInexact = false;
+            }
+            else
+            {
+                inexactMax = inexact->value < inexactMax ? inexact->value : inexactMax;
+            }
+        }
+        else throw std::invalid_argument("Expected number, found " + expr->toString());
+    }
+
+    // If we came across an inexact number, then firstInexact is false
+    if (!firstInexact)
+    {
+        auto rationalM = boost::rational_cast<double>(rationalMax);
+        return std::make_unique<Expressions::InexactNumberExpression>
+                (Expressions::InexactNumberExpression(
+                        (rationalM < inexactMax && !firstRational) ? rationalM : inexactMax,
+                        std::move(scope)
+                ));
+    }
+
+    return std::make_unique<Expressions::NumericalValueExpression>
+            (Expressions::NumericalValueExpression(rationalMax, std::move(scope)));
+}
 
 void register_math_functions()
 {
@@ -295,5 +398,7 @@ void register_math_functions()
     Functions::funcMap["sqrt"] = funcSqrt;
     Functions::funcMap["sqr"] = funcSqr;
     Functions::funcMap["expt"] = funcExpt;
+    Functions::funcMap["max"] = funcMax;
+    Functions::funcMap["min"] = funcMin;
 }
 
