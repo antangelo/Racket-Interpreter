@@ -102,6 +102,18 @@ cond_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scop
     if (expr.empty()) throw std::invalid_argument("cond: Reached end without finding true condition");
 
     std::unique_ptr<Expressions::Expression> firstCond = Expressions::evaluate(std::move(expr[0]));
+
+    if (auto pex = dynamic_cast<Expressions::PartialExpression *>(firstCond.get()))
+    {
+        if (pex->mTupleMembers[0] == "else")
+        {
+            if (expr.size() > 1) throw std::invalid_argument("else clause must be last");
+
+            pex->localScope->define("else", std::make_unique<Expressions::BooleanValueExpression>
+                    (Expressions::BooleanValueExpression(true, nullptr)));
+        }
+    }
+
     std::unique_ptr<Expressions::Expression> tupleExpr = Expressions::evaluate(std::move(firstCond));
 
     if (auto tupleCast = dynamic_cast<Expressions::TupleExpression *>(tupleExpr.get()))
