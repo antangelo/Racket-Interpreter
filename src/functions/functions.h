@@ -19,6 +19,8 @@ namespace Functions
 
     void registerFunctions();
 
+    void arg_count_check(const expression_vector &args, int expectedCount);
+
     std::unique_ptr<Expressions::Expression> getFormByName(const std::string &, std::shared_ptr<Expressions::Scope>);
 
     std::unique_ptr<Expressions::Expression> getFuncByName(const std::string &, std::shared_ptr<Expressions::Scope>);

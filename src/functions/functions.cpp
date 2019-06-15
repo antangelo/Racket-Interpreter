@@ -8,6 +8,7 @@
 void register_boolean_ops();
 void register_math_functions();
 
+void register_symbol_functions();
 void register_testing_functions();
 
 namespace Functions
@@ -18,10 +19,17 @@ namespace Functions
     std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
                                                                                  std::shared_ptr<Expressions::Scope>)>> specialFormMap;
 
+    void arg_count_check(const expression_vector &args, int expectedCount)
+    {
+        if (args.size() != expectedCount)
+            throw std::invalid_argument("Error: Expected " + std::to_string(expectedCount)
+                                        + " argument(s), found " + std::to_string(args.size()) + ".");
+    }
+
     std::unique_ptr<Expressions::Expression> display_func(expression_vector expr,
                                                           std::shared_ptr<Expressions::Scope> scope)
     {
-        if (expr.empty()) throw std::invalid_argument("display expects at least 1 arg.");
+        arg_count_check(expr, 1);
 
         std::cout << *expr.front();
 
@@ -32,7 +40,7 @@ namespace Functions
     std::unique_ptr<Expressions::Expression> newline_func(const expression_vector &expr,
                                                           std::shared_ptr<Expressions::Scope> scope)
     {
-        if (!expr.empty()) throw std::invalid_argument("newline expects no args");
+        arg_count_check(expr, 0);
 
         std::cout << std::endl;
 
@@ -43,7 +51,7 @@ namespace Functions
     std::unique_ptr<Expressions::Expression> begin_func(expression_vector expr,
                                                         const std::shared_ptr<Expressions::Scope> & /* scope */)
     {
-        if (expr.empty()) throw std::invalid_argument("begin expects at least 1 arg.");
+        if (expr.empty()) throw std::invalid_argument("begin expects at least 1 arg, given none");
 
         for (int i = 0; i < expr.size() - 1; i++)
         {
@@ -101,6 +109,8 @@ namespace Functions
     std::unique_ptr<Expressions::Expression> define_form(expression_vector expr,
                                                          const std::shared_ptr<Expressions::Scope> &scope)
     {
+        arg_count_check(expr, 2);
+
         std::string name;
         std::unique_ptr<Expressions::Expression> binding;
 
@@ -136,6 +146,7 @@ namespace Functions
 
         register_math_functions();
         register_boolean_ops();
+        register_symbol_functions();
         register_testing_functions();
 
         funcMap["display"] = display_func;

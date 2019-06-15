@@ -67,7 +67,7 @@ void register_relational_ops()
 std::unique_ptr<Expressions::Expression>
 if_func(Expressions::expression_vector expr, const std::shared_ptr<Expressions::Scope> & /* scope */)
 {
-    if (expr.size() != 3) throw std::invalid_argument("if expects 3 args");
+    Functions::arg_count_check(expr, 3);
 
     std::unique_ptr<Expressions::Expression> test = Expressions::evaluate(std::move(expr[0]));
     std::unique_ptr<Expressions::Expression> result;

@@ -205,7 +205,7 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
 
 expr_ptr funcSqrt(expression_vector args, scope_ptr scope)
 {
-    if (args.size() != 1) throw std::invalid_argument("sqrt expects one arg");
+    Functions::arg_count_check(args, 1);
 
     double result = 0;
 
@@ -225,7 +225,7 @@ expr_ptr funcSqrt(expression_vector args, scope_ptr scope)
 
 expr_ptr funcSqr(expression_vector args, scope_ptr scope)
 {
-    if (args.size() != 1) throw std::invalid_argument("sqr expects one arg");
+    Functions::arg_count_check(args, 1);
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args.front().get()))
     {
@@ -244,7 +244,7 @@ expr_ptr funcSqr(expression_vector args, scope_ptr scope)
 
 expr_ptr funcExpt(expression_vector args, scope_ptr scope)
 {
-    if (args.size() != 2) throw std::invalid_argument("expt expects two args");
+    Functions::arg_count_check(args, 2);
 
     double base, exponent, result;
     bool exactBase = false, exactExp = false;
