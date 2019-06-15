@@ -53,10 +53,10 @@ namespace Functions
         return Expressions::evaluate(std::move(expr.back()));
     }
 
-    std::unique_ptr<Expressions::Expression> define_lambda(Expressions::UnparsedExpression *raw, expression_vector expr,
+    std::unique_ptr<Expressions::Expression> define_lambda(const std::string &raw, expression_vector expr,
                                                            const std::shared_ptr<Expressions::Scope> &scope)
     {
-        std::vector<std::string> fnSignature = Parser::parseTuple(raw->toString());
+        std::vector<std::string> fnSignature = Parser::parseTuple(raw);
 
         /** Pop the name off the signature, then the rest becomes the parameters of the function */
         std::string name = fnSignature[0];
@@ -66,7 +66,7 @@ namespace Functions
             throw std::invalid_argument("Error: Scope already contains key for " + name);
 
         /** Next, we need to parse the lambda body */
-        if (auto body = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
+        if (expr[1]->type() == "UnparsedExpression")
         {
             /** The lambda requires a string containing the args to be given to it */
             std::string lambdaArgs = "(";
@@ -81,7 +81,7 @@ namespace Functions
             std::vector<std::string> lambdaBody;
             lambdaBody.emplace_back("lambda");
             lambdaBody.push_back(lambdaArgs);
-            lambdaBody.push_back(body->toString());
+            lambdaBody.push_back(expr[1]->toString());
 
             auto binding = std::unique_ptr<Expressions::Expression>
                     (new Expressions::LambdaExpression(lambdaBody, fnSignature,
@@ -104,23 +104,22 @@ namespace Functions
         std::string name;
         std::unique_ptr<Expressions::Expression> binding;
 
-        if (auto raw = dynamic_cast<Expressions::UnparsedExpression *>(expr[0].get()))
+        if (expr[0]->type() == "UnparsedExpression")
         {
-            if (raw->toString().front() == '(' || raw->toString().front() == '[')
+            name = expr[0]->toString();
+            if (name.front() == '(' || name.front() == '[')
             {
-                return define_lambda(raw, std::move(expr), scope);
+                return define_lambda(name, std::move(expr), scope);
             }
-
-            name = raw->toString();
         }
         else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[0]->toString());
 
         if (scope->contains(name) || funcMap.count(name) > 0 || specialFormMap.count(name) > 0)
             throw std::invalid_argument("Error: Scope already contains key for " + name);
 
-        if (auto raw = dynamic_cast<Expressions::UnparsedExpression *>(expr[1].get()))
+        if (expr[1]->type() == "UnparsedExpression")
         {
-            binding = raw->evaluate(std::move(expr[1]));
+            binding = Expressions::evaluate(std::move(expr[1]));
         }
         else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[1]->toString());
 

@@ -38,7 +38,7 @@ namespace Interpreter
 
     void print(std::unique_ptr<Expressions::Expression> &expr)
     {
-        if (dynamic_cast<Expressions::VoidValueExpression *>(expr.get())) return;
+        if (expr->type() == "VoidValueExpression") return;
 
         std::cout << expr->toString() << std::endl;
     }
@@ -47,8 +47,8 @@ namespace Interpreter
     {
         for (auto &exp : steps)
         {
-            if (dynamic_cast<Expressions::VoidValueExpression *>(exp.get()) ||
-                dynamic_cast<Expressions::PartialExpression *>(exp.get()))
+            if (exp->type() == "VoidValueExpression" ||
+                exp->type() == "PartialExpression")
                 continue;
 
             std::cout << exp->toString() << std::endl;

@@ -62,6 +62,8 @@ namespace Expressions
 
         virtual std::string toString() const = 0;
 
+        virtual std::string type() const final;
+
         virtual std::unique_ptr<Expression> clone() = 0;
 
         friend std::ostream &operator<<(std::ostream &stream, const Expression &expr);
@@ -71,10 +73,14 @@ namespace Expressions
         std::shared_ptr<Scope> localScope;
 
     protected:
-        explicit Expression(std::shared_ptr<Scope> scope)
+        explicit Expression(std::shared_ptr<Scope> scope, const std::string &exprType)
         {
             this->localScope = std::move(scope);
+            this->exprType = exprType;
         }
+
+    private:
+        std::string exprType;
     };
 
 
@@ -96,14 +102,14 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit UnparsedExpression(std::string contents, std::unique_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "UnparsedExpression")
         {
             this->mContents = std::move(contents);
         }
 
     private:
         UnparsedExpression(const UnparsedExpression &old_expr, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "UnparsedExpression")
         {
             this->mContents = old_expr.mContents;
         }
@@ -123,14 +129,14 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit PartialExpression(std::vector<std::string> tuple, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "PartialExpression")
         {
             mTupleMembers = std::move(tuple);
         }
 
     private:
         PartialExpression(const PartialExpression &old_expr, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "PartialExpression")
         {
             this->mTupleMembers = std::vector<std::string>(old_expr.mTupleMembers);
         }
@@ -150,14 +156,14 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit TupleExpression(expression_vector tuple, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "TupleExpression")
         {
             mTupleMembers = std::move(tuple);
         }
 
     private:
         TupleExpression(const TupleExpression &old_expr, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "TupleExpression")
         {
             for (auto &exp : old_expr.mTupleMembers)
             {
@@ -185,14 +191,14 @@ namespace Expressions
                                     std::function<std::unique_ptr<Expression>(expression_vector,
                                                                               std::shared_ptr<Scope>)> &func,
                                     std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "FunctionExpression")
         {
             mFuncName = std::move(funcName);
             mFunction = func;
         }
 
     protected:
-        explicit FunctionExpression(std::shared_ptr<Scope> scope) : Expression(std::move(scope))
+        explicit FunctionExpression(std::shared_ptr<Scope> scope) : Expression(std::move(scope), "FunctionExpression")
         {}
 
         bool mSpecialForm = false;
@@ -201,7 +207,7 @@ namespace Expressions
 
     private:
         FunctionExpression(const FunctionExpression &old_expr, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "FunctionExpression")
         {
             this->mFuncName = old_expr.mFuncName;
             this->mFunction = old_expr.mFunction;
@@ -283,7 +289,7 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit NumericalValueExpression(const std::string &str, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "NumericalValueExpression")
         {
             if (str.find('/') != std::string::npos)
             {
@@ -330,19 +336,19 @@ namespace Expressions
         }
 
         explicit NumericalValueExpression(boost::rational<int> value, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "NumericalValueExpression")
         {
             mValue = value;
         }
 
         explicit NumericalValueExpression(int numerator, int denominator, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "NumericalValueExpression")
         {
             mValue = boost::rational<int>(numerator, denominator);
         }
 
         explicit NumericalValueExpression(double value, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "NumericalValueExpression")
         {
             int denominator = 1;
 
@@ -357,7 +363,7 @@ namespace Expressions
 
     private:
         NumericalValueExpression(const NumericalValueExpression &old_expr, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "NumericalValueExpression")
         {
             this->mValue = old_expr.mValue;
         }
@@ -377,7 +383,7 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit InexactNumberExpression(double value, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "InexactNumberExpression")
         {
             this->value = value;
         }
@@ -394,7 +400,7 @@ namespace Expressions
 
         std::unique_ptr<Expression> clone() override;
 
-        explicit VoidValueExpression(std::shared_ptr<Scope> scope) : Expression(std::move(scope))
+        explicit VoidValueExpression(std::shared_ptr<Scope> scope) : Expression(std::move(scope), "VoidValueExpression")
         {}
     };
 
@@ -415,7 +421,7 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit BooleanValueExpression(bool val, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "BooleanValueExpression")
         {
             this->value = val;
         }
@@ -435,7 +441,7 @@ namespace Expressions
         std::unique_ptr<Expression> clone() override;
 
         explicit SymbolExpression(const std::string &symbol, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope))
+                : Expression(std::move(scope), "SymbolExpression")
         {
             this->symbol = symbol;
         }

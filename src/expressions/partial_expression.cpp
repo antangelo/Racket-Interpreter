@@ -48,9 +48,9 @@ namespace Expressions
         {
             auto expr = Parser::parse(str, localScope);
 
-            if (auto partialExpression = dynamic_cast<PartialExpression *>(expr.get()))
+            if (expr->type() == "PartialExpression")
             {
-                members.push_back(std::move(partialExpression->evaluate(std::move(expr))));
+                members.push_back(Expressions::evaluate(std::move(expr)));
             }
             else
             {

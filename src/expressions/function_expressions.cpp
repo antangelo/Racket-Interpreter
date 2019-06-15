@@ -63,10 +63,9 @@ namespace Expressions
 
         auto expr = Parser::parse(toParser, fnScope);
 
-        if (auto pex = dynamic_cast<PartialExpression *>(expr.get()))
+        if (expr->type() == "PartialExpression")
         {
-            // Evaluate the resulting partial expression in the scope of the function.
-            expr = pex->evaluate(std::move(expr));
+            expr = Expressions::evaluate(std::move(expr));
         }
 
         return expr;

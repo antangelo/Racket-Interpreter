@@ -73,6 +73,11 @@ namespace Expressions
         return ref->evaluate(std::move(obj_ref));
     }
 
+    std::string Expression::type() const
+    {
+        return this->exprType;
+    }
+
     /* UnparsedExpression */
 
     bool UnparsedExpression::isValue()
