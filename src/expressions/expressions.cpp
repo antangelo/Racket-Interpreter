@@ -187,4 +187,26 @@ namespace Expressions
     {
         return std::unique_ptr<Expression>(new BooleanValueExpression(this->value, this->localScope));
     }
+
+    /* SymbolExpression */
+
+    bool SymbolExpression::isValue()
+    {
+        return true;
+    }
+
+    std::unique_ptr<Expression> SymbolExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref)
+    {
+        return std::move(obj_ref);
+    }
+
+    std::string SymbolExpression::toString() const
+    {
+        return this->symbol;
+    }
+
+    std::unique_ptr<Expression> SymbolExpression::clone()
+    {
+        return std::make_unique<SymbolExpression>(SymbolExpression(symbol, localScope));
+    }
 }

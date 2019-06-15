@@ -420,6 +420,26 @@ namespace Expressions
             this->value = val;
         }
     };
+
+    class SymbolExpression : public Expression
+    {
+    public:
+        std::string symbol;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit SymbolExpression(const std::string &symbol, std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope))
+        {
+            this->symbol = symbol;
+        }
+    };
 }
 
 #endif //RACKET_INTERPRETER_EXPRESSIONS_H

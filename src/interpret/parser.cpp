@@ -185,6 +185,12 @@ namespace Parser
                 std::cerr << exception.what() << std::endl;
             }
         }
+        else if (str[0] == '\'')
+        {
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::make_unique<Expressions::SymbolExpression>(
+                    Expressions::SymbolExpression(str, std::move(localScope)));
+        }
 
         throw std::invalid_argument("Invalid expression: " + str);
     }
