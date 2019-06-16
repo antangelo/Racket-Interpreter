@@ -214,4 +214,26 @@ namespace Expressions
     {
         return std::make_unique<SymbolExpression>(SymbolExpression(symbol, localScope));
     }
+
+    /* StringExpression */
+
+    bool StringExpression::isValue()
+    {
+        return true;
+    }
+
+    std::unique_ptr<Expression> StringExpression::evaluate(std::unique_ptr<Expressions::Expression> obj_ref)
+    {
+        return std::move(obj_ref);
+    }
+
+    std::string StringExpression::toString() const
+    {
+        return "\"" + this->str + "\"";
+    }
+
+    std::unique_ptr<Expression> StringExpression::clone()
+    {
+        return std::make_unique<StringExpression>(StringExpression(str, localScope));
+    }
 }

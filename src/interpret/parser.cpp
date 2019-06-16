@@ -17,11 +17,16 @@ namespace Parser
     size_t findTupleEnd(const std::string &tuple)
     {
         int tupleCount = 0;
+        bool inString = false;
         if (tuple[0] != '(' && tuple[0] != '[') return 0;
 
         for (size_t index = 0; index < tuple.size(); ++index)
         {
             char chr = tuple[index];
+
+            if (chr == '"' && index > 0 && tuple[index - 1] != '\\') inString = !inString;
+            if (inString) continue;
+
             if (chr == '(' || chr == '[') tupleCount++;
             else if (chr == ')' || chr == ']') tupleCount--;
 
@@ -34,11 +39,23 @@ namespace Parser
     std::vector<std::string> parseTuple(const std::string &str)
     {
         int nestedTupleCount = 0;
+        bool inString = false;
         std::vector<std::string> rtn;
         std::string elem;
 
-        for (auto &chr : str)
+        for (int index = 0; index < str.length(); ++index)
         {
+            char chr = str[index];
+
+            if (chr == '"' && index >= 1 && str[index - 1] != '\\')
+                inString = !inString;
+
+            if (inString)
+            {
+                elem += chr;
+                continue;
+            }
+
             if (nestedTupleCount == 1 && (chr == ')' || chr == ']'))
             {
                 if (!elem.empty()) rtn.push_back(elem);
@@ -73,6 +90,50 @@ namespace Parser
         }
 
         throw std::invalid_argument("Tuple \"" + str + "\" is never closed.");
+    }
+
+    /**
+     * Limits string contents to be between quotes
+     * The first character in the string must be a quote
+     */
+    std::string parseString(const std::string &str)
+    {
+        std::string rtn;
+        bool inString = false;
+
+        for (int index = 0; index < str.length(); ++index)
+        {
+            char chr = str[index];
+            if (chr == '"' && ((index >= 1 && str[index - 1] != '\\') || index == 0))
+                inString = !inString;
+            else if (inString) rtn += chr;
+            else break;
+        }
+
+        return rtn;
+    }
+
+    std::string parseSymbol(const std::string &str)
+    {
+        if (str.length() <= 1) throw std::invalid_argument("Invalid symbol: " + str);
+
+        std::string rtn;
+        bool inPipe = false;
+
+        for (auto &chr : str)
+        {
+            if (inPipe && chr == '|')
+            {
+                rtn += chr;
+                break;
+            }
+            else if (chr == '|') inPipe = !inPipe;
+            else if (!inPipe && (chr == ' ' || chr == '\n' || chr == '\t')) break;
+
+            rtn += chr;
+        }
+
+        return rtn;
     }
 
     /**
@@ -133,30 +194,24 @@ namespace Parser
 
     std::unique_ptr<Expressions::Expression> parse(std::string str, const std::shared_ptr<Expressions::Scope> &scope)
     {
-        if (str.front() == '(' || str.front() == '[')
+        if (str[0] == '(' || str[0] == '[')
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             std::unique_ptr<Expressions::Expression> expr(new Expressions::PartialExpression(parseTuple(str),
                                                                                              std::move(localScope)));
             return std::move(expr);
         }
+        else if (str[0] == '"')
+        {
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::make_unique<Expressions::StringExpression>
+                    (Expressions::StringExpression(parseString(str), std::move(localScope)));
+        }
         else if (str[0] == '#')
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             std::unique_ptr<Expressions::Expression> expr(new Expressions::VoidValueExpression(localScope));
             return std::move(expr);
-        }
-        else if (scope != nullptr && scope->contains(str))
-        {
-            return scope->getDefinition(str);
-        }
-        else if (Functions::funcMap.count(str) > 0)
-        {
-            return Functions::getFuncByName(str, scope);
-        }
-        else if (Functions::specialFormMap.count(str) > 0)
-        {
-            return Functions::getFormByName(str, scope);
         }
         else if (str == "true")
         {
@@ -189,7 +244,19 @@ namespace Parser
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             return std::make_unique<Expressions::SymbolExpression>(
-                    Expressions::SymbolExpression(str, std::move(localScope)));
+                    Expressions::SymbolExpression(parseSymbol(str), std::move(localScope)));
+        }
+        else if (scope != nullptr && scope->contains(str))
+        {
+            return scope->getDefinition(str);
+        }
+        else if (Functions::funcMap.count(str) > 0)
+        {
+            return Functions::getFuncByName(str, scope);
+        }
+        else if (Functions::specialFormMap.count(str) > 0)
+        {
+            return Functions::getFormByName(str, scope);
         }
 
         throw std::invalid_argument("Invalid expression: " + str);

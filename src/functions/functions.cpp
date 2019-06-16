@@ -6,9 +6,13 @@
 #include "../interpret/parser.h"
 
 void register_boolean_ops();
+
 void register_math_functions();
 
+void register_string_functions();
+
 void register_symbol_functions();
+
 void register_testing_functions();
 
 namespace Functions
@@ -146,6 +150,7 @@ namespace Functions
 
         register_math_functions();
         register_boolean_ops();
+        register_string_functions();
         register_symbol_functions();
         register_testing_functions();
 
