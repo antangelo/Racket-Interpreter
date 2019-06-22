@@ -83,10 +83,31 @@ expr_ptr stringToIntFunc(expression_vector args, scope_ptr scope)
     throw std::invalid_argument("Expected string, found " + args[0]->toString());
 }
 
+expr_ptr intToStringFunc(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto arg = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        boost::rational<int> num = arg->mValue;
+        if (num.denominator() != 1)
+            throw std::invalid_argument("Expected rational, found " + args[0]->toString());
+
+        std::string str;
+        str += (char) num.numerator();
+
+        return std::make_unique<Expressions::StringExpression>
+                (Expressions::StringExpression(str, std::move(scope)));
+    }
+
+    throw std::invalid_argument("Expected rational, found " + args[0]->toString());
+}
+
 void register_string_functions()
 {
     Functions::funcMap["string?"] = stringPredicateFunc;
     Functions::funcMap["string=?"] = stringEqualFunc;
     Functions::funcMap["string->symbol"] = stringToSymbolFunc;
     Functions::funcMap["string->int"] = stringToIntFunc;
+    Functions::funcMap["int->string"] = intToStringFunc;
 }

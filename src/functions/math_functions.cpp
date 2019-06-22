@@ -389,6 +389,25 @@ expr_ptr funcMin(expression_vector args, scope_ptr scope)
             (Expressions::NumericalValueExpression(rationalMax, std::move(scope)));
 }
 
+expr_ptr absFn(expression_vector args, const scope_ptr & /* scope */)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        if (rational->mValue < 0) rational->mValue = -rational->mValue;
+
+        return std::move(args[0]);
+    }
+    else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        if (inexact->value < 0) inexact->value = -inexact->value;
+
+        return std::move(args[0]);
+    }
+    else throw std::invalid_argument("Expected number, found " + args[0]->toString());
+}
+
 void register_math_functions()
 {
     Functions::funcMap["+"] = plus_func;
@@ -400,5 +419,6 @@ void register_math_functions()
     Functions::funcMap["expt"] = funcExpt;
     Functions::funcMap["max"] = funcMax;
     Functions::funcMap["min"] = funcMin;
+    Functions::funcMap["abs"] = absFn;
 }
 
