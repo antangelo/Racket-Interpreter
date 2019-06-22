@@ -26,7 +26,7 @@ namespace Expressions
 
         for (auto &field : this->structFields)
         {
-            rtn += " " + field.second->toString();
+            rtn += " " + field->toString();
         }
 
         return rtn + ")";
@@ -39,11 +39,11 @@ namespace Expressions
 
     std::unique_ptr<Expression> StructExpression::clone()
     {
-        std::map<std::string, std::unique_ptr<Expression>> fieldClone;
+        std::vector<std::unique_ptr<Expression>> fieldClone;
 
         for (auto &field : this->structFields)
         {
-            fieldClone[field.first] = field.second->clone();
+            fieldClone.push_back(field->clone());
         }
 
         return std::make_unique<StructExpression>
@@ -54,16 +54,17 @@ namespace Expressions
 namespace StructFunctions
 {
 
-    racket_function makeStructFn(const std::string &structName, const std::vector<std::string> &structFields)
+    racket_function makeStructFn(const std::string &structName, int fieldCount)
     {
-        return [structName, structFields](expression_vector args, scope_ptr scope) -> expr_ptr
+        return [structName, fieldCount](expression_vector args, scope_ptr scope) -> expr_ptr
         {
-            Functions::arg_count_check(args, structFields.size());
-            std::map<std::string, expr_ptr> fields;
+            Functions::arg_count_check(args, fieldCount);
+            std::vector<expr_ptr> fields;
+            fields.reserve(args.size());
 
-            for (int i = 0; i < structFields.size(); ++i)
+            for (int i = 0; i < fieldCount; ++i)
             {
-                fields[structFields[i]] = std::move(args[i]);
+                fields.push_back(std::move(args[i]));
             }
 
             return std::make_unique<Expressions::StructExpression>
@@ -89,9 +90,9 @@ namespace StructFunctions
         };
     }
 
-    racket_function getStructFieldFn(const std::string &structName, const std::string &fieldName)
+    racket_function getStructFieldFn(const std::string &structName, int fieldNum)
     {
-        return [structName, fieldName](expression_vector args, scope_ptr scope) -> expr_ptr
+        return [structName, fieldNum](expression_vector args, scope_ptr scope) -> expr_ptr
         {
             Functions::arg_count_check(args, 1);
 
@@ -100,7 +101,7 @@ namespace StructFunctions
                 if (structure->structName != structName)
                     throw std::invalid_argument("Expected " + structName + ", found " + structure->structName);
 
-                return structure->structFields.at(fieldName)->clone();
+                return structure->structFields[fieldNum]->clone();
             }
 
             throw std::invalid_argument("Expected " + structName + ", found " + args[0]->toString());
@@ -109,14 +110,16 @@ namespace StructFunctions
 
     void defineStruct(const std::string &structName, const std::vector<std::string> &structFields)
     {
-        Functions::funcMap["make-" + structName] = makeStructFn(structName, structFields);
+        Functions::funcMap["make-" + structName] = makeStructFn(structName, structFields.size());
         Functions::funcMap[structName + "?"] = structPredicateFn(structName);
 
+        int fieldCount = 0;
         for (auto &fieldName : structFields)
         {
             std::stringstream getterName;
             getterName << structName << "-" << fieldName;
-            Functions::funcMap[getterName.str()] = getStructFieldFn(structName, fieldName);
+            Functions::funcMap[getterName.str()] = getStructFieldFn(structName, fieldCount);
+            ++fieldCount;
         }
     }
 

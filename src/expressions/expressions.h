@@ -468,7 +468,7 @@ namespace Expressions
     public:
         std::string structName;
 
-        std::map<std::string, std::unique_ptr<Expression>> structFields;
+        std::vector<std::unique_ptr<Expression>> structFields;
 
         bool isValue() override;
 
@@ -478,7 +478,7 @@ namespace Expressions
 
         std::unique_ptr<Expression> clone() override;
 
-        explicit StructExpression(const std::string &name, std::map<std::string, std::unique_ptr<Expression>> fields,
+        explicit StructExpression(const std::string &name, std::vector<std::unique_ptr<Expression>> fields,
                                   std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "StructExpression")
         {
