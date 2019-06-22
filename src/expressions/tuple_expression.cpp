@@ -9,17 +9,20 @@ namespace Expressions
 {
     bool TupleExpression::isValue()
     {
-        return false; // for now, will change in the future.
+        return false;
     }
 
     std::unique_ptr<Expression> TupleExpression::evaluate(std::unique_ptr<Expression> obj_ref)
     {
-        for (auto &expr : mTupleMembers)
+        if (!dynamic_cast<SpecialFormExpression *>(mTupleMembers[0].get()))
         {
-            if (!expr->isValue())
+            for (auto &expr : mTupleMembers)
             {
-                expr = Expressions::evaluate(std::move(expr));
-                return std::move(obj_ref); // Only evaluate one step
+                if (!expr->isValue())
+                {
+                    expr = Expressions::evaluate(std::move(expr));
+                    return std::move(obj_ref); // Only evaluate one step
+                }
             }
         }
 

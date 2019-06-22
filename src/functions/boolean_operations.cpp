@@ -101,7 +101,8 @@ cond_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scop
 
     if (expr.empty()) throw std::invalid_argument("cond: Reached end without finding true condition");
 
-    std::unique_ptr<Expressions::Expression> firstCond = Expressions::evaluate(std::move(expr[0]));
+    std::unique_ptr<Expressions::Expression> firstCond = std::move(expr[0]);
+    if (firstCond->type() == "UnparsedExpression") firstCond = Expressions::evaluate(std::move(firstCond));
 
     if (auto pex = dynamic_cast<Expressions::PartialExpression *>(firstCond.get()))
     {
@@ -114,9 +115,9 @@ cond_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scop
         }
     }
 
-    std::unique_ptr<Expressions::Expression> tupleExpr = Expressions::evaluate(std::move(firstCond));
+    if (firstCond->type() == "PartialExpression") firstCond = Expressions::evaluate(std::move(firstCond));
 
-    if (auto tupleCast = dynamic_cast<Expressions::TupleExpression *>(tupleExpr.get()))
+    if (auto tupleCast = dynamic_cast<Expressions::TupleExpression *>(firstCond.get()))
     {
         std::unique_ptr<Expressions::Expression> test = std::move(tupleCast->mTupleMembers[0]);
 
@@ -124,7 +125,7 @@ cond_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scop
         {
             test = Expressions::evaluate(std::move(test));
             tupleCast->mTupleMembers[0] = std::move(test);
-            Parser::parseSpecialForm(tupleCast->toString(), scope, expr[0]);
+            expr[0] = std::move(firstCond);
         }
         else
         {
@@ -142,7 +143,7 @@ cond_func(Expressions::expression_vector expr, std::shared_ptr<Expressions::Scop
             else throw std::invalid_argument("cond: Expected boolean, found " + test->toString());
         }
     }
-    else throw std::invalid_argument("cond: Expected test, found " + tupleExpr->toString());
+    else throw std::invalid_argument("cond: Expected test, found " + firstCond->toString());
 
     for (auto &conditional : expr)
     {
