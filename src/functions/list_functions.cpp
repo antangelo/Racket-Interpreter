@@ -61,6 +61,30 @@ namespace ListFunctions
         }
         else throw std::invalid_argument("Expected list, found " + args[1]->toString());
     }
+
+    expr_ptr emptyPredicateFn(expression_vector args, scope_ptr scope)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            return std::make_unique<Expressions::BooleanValueExpression>
+                    (Expressions::BooleanValueExpression(list->list.empty(), std::move(scope)));
+        }
+        else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+    }
+
+    expr_ptr consPredicateFn(expression_vector args, scope_ptr scope)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            return std::make_unique<Expressions::BooleanValueExpression>
+                    (Expressions::BooleanValueExpression(!list->list.empty(), std::move(scope)));
+        }
+        else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+    }
 }
 
 void register_list_functions()
@@ -69,4 +93,6 @@ void register_list_functions()
     Functions::funcMap["list"] = ListFunctions::listFn;
     Functions::funcMap["first"] = ListFunctions::firstFn;
     Functions::funcMap["rest"] = ListFunctions::restFn;
+    Functions::funcMap["empty?"] = ListFunctions::emptyPredicateFn;
+    Functions::funcMap["cons?"] = ListFunctions::consPredicateFn;
 }
