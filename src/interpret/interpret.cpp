@@ -23,7 +23,17 @@ namespace Interpreter
         while (!expr->isValue())
         {
             vec.push_back(expr->clone());
-            expr = Expressions::evaluate(std::move(expr));
+
+            try
+            {
+                expr = Expressions::evaluate(std::move(expr));
+            }
+            catch (std::exception &e)
+            {
+                std::cerr << e.what() << std::endl;
+
+                return vec;
+            }
         }
 
         vec.push_back(std::move(expr));
