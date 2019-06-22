@@ -51,7 +51,7 @@ namespace Interpreter
                 exp->type() == "PartialExpression")
                 continue;
 
-            std::cout << exp->toString() << std::endl;
+            std::cout << exp->toString() << std::endl << std::endl;
         }
     }
 
