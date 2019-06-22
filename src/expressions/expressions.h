@@ -466,6 +466,30 @@ namespace Expressions
             this->str = str;
         }
     };
+
+    class StructExpression : public Expression
+    {
+    public:
+        std::string structName;
+
+        std::map<std::string, std::unique_ptr<Expression>> structFields;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit StructExpression(const std::string &name, std::map<std::string, std::unique_ptr<Expression>> fields,
+                                  std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope), "StructExpression")
+        {
+            this->structName = name;
+            this->structFields = std::move(fields);
+        }
+    };
 }
 
 #endif //RACKET_INTERPRETER_EXPRESSIONS_H
