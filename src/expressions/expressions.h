@@ -44,8 +44,6 @@ namespace Expressions
     public:
         std::map<std::string, std::unique_ptr<Expressions::Expression>> definitions;
         Scope *globalScope;
-
-    private:
         std::shared_ptr<Scope> parent;
     };
 

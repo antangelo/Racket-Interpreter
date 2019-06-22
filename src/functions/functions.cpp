@@ -4,6 +4,7 @@
 
 #include "functions.h"
 #include "../interpret/parser.h"
+#include "../interpret/interpret.h"
 
 void register_boolean_ops();
 
@@ -102,7 +103,8 @@ namespace Functions
                                                        std::make_unique<Expressions::Scope>(
                                                                Expressions::Scope(scope))));
 
-            scope->defineGlobal(name, std::move(binding));
+            // scope->parent is the tuple, we need to go further up to make our definition
+            scope->parent->parent->define(name, std::move(binding));
             return std::unique_ptr<Expressions::Expression>
                     (new Expressions::VoidValueExpression(
                             std::make_unique<Expressions::Scope>(Expressions::Scope(scope))));
@@ -130,7 +132,7 @@ namespace Functions
         }
         else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[0]->toString());
 
-        if (scope->contains(name) || funcMap.count(name) > 0 || specialFormMap.count(name) > 0)
+        if (scope->definitions.count(name) > 0 || funcMap.count(name) > 0 || specialFormMap.count(name) > 0)
             throw std::invalid_argument("Error: Scope already contains key for " + name);
 
         if (expr[1]->type() == "UnparsedExpression")
@@ -139,16 +141,33 @@ namespace Functions
         }
         else throw std::invalid_argument("Error: Special form given parsed expression: " + expr[1]->toString());
 
-        scope->defineGlobal(name, std::move(binding));
+        // scope->parent is the tuple, we need to go further up to make our definition
+        scope->parent->parent->define(name, std::move(binding));
 
         return std::unique_ptr<Expressions::Expression>(
                 new Expressions::VoidValueExpression(std::make_unique<Expressions::Scope>
                                                              (Expressions::Scope(scope))));
     }
 
+    std::unique_ptr<Expressions::Expression> local_form(expression_vector args,
+                                                        const std::shared_ptr<Expressions::Scope> &scope)
+    {
+        Functions::arg_count_check(args, 2);
+        std::vector<std::string> definitionTuple = Parser::parseTuple(args[0]->toString());
+
+        for (auto &definition : definitionTuple)
+        {
+            std::unique_ptr<Expressions::Expression> defExpr = Parser::parse(definition, scope->parent);
+            Interpreter::interpret(std::move(defExpr));
+        }
+
+        return Expressions::evaluate(std::move(args[1]));
+    }
+
     void registerFunctions()
     {
         specialFormMap["define"] = define_form;
+        specialFormMap["local"] = local_form;
 
         register_math_functions();
         register_boolean_ops();
