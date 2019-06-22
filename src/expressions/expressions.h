@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <list>
 #include <map>
 
 #include "boost/rational.hpp"
@@ -402,9 +403,6 @@ namespace Expressions
         {}
     };
 
-    // Non-numerical value list:
-    // TODO: Lists
-
     class BooleanValueExpression : public Expression
     {
     public:
@@ -486,6 +484,26 @@ namespace Expressions
         {
             this->structName = name;
             this->structFields = std::move(fields);
+        }
+    };
+
+    class ListExpression : public Expression
+    {
+    public:
+        std::list<std::unique_ptr<Expression>> list;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit ListExpression(std::list<std::unique_ptr<Expression>> list, std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope), "ListExpression")
+        {
+            this->list = std::move(list);
         }
     };
 }

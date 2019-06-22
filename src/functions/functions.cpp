@@ -18,6 +18,8 @@ void register_testing_functions();
 
 void register_struct_functions();
 
+void register_list_functions();
+
 namespace Functions
 {
     std::map<std::string, std::function<std::unique_ptr<Expressions::Expression>(expression_vector,
@@ -175,6 +177,7 @@ namespace Functions
         register_symbol_functions();
         register_testing_functions();
         register_struct_functions();
+        register_list_functions();
 
         funcMap["display"] = display_func;
         funcMap["newline"] = newline_func;
