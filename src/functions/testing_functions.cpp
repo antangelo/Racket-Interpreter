@@ -35,6 +35,9 @@ std::unique_ptr<Expressions::Expression> run_tests_fn(const Expressions::express
     for (auto &testCase : testCases)
     {
         ++totalTests;
+
+        std::cout << "Test case: " << testCase.test->toString() << " == " << testCase.expected->toString() << std::endl;
+
         std::unique_ptr<Expressions::Expression> test = Interpreter::interpret(
                 Expressions::evaluate(std::move(testCase.test)));
         std::unique_ptr<Expressions::Expression> expected = Interpreter::interpret(
@@ -42,6 +45,11 @@ std::unique_ptr<Expressions::Expression> run_tests_fn(const Expressions::express
 
         //TODO: Replace naive comparison
         if (test->toString() == expected->toString()) ++passedTests;
+        else
+        {
+            std::cout << "Test failed- Expected: " << expected->toString() << ", got: "
+                      << test->toString() << std::endl;
+        }
     }
 
     testCases.clear();
