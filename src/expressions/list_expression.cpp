@@ -37,7 +37,7 @@ namespace Expressions
 
         for (auto &elem : this->list)
         {
-            listClone.push_front(elem->clone());
+            listClone.push_back(elem->clone());
         }
 
         return std::make_unique<ListExpression>(ListExpression(std::move(listClone), localScope));
