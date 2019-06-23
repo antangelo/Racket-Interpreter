@@ -506,6 +506,26 @@ namespace Expressions
             this->list = std::move(list);
         }
     };
+
+    class CharacterExpression : public Expression
+    {
+    public:
+        char character;
+
+        bool isValue() override;
+
+        std::unique_ptr<Expression> evaluate(std::unique_ptr<Expression> obj_ref) override;
+
+        std::string toString() const override;
+
+        std::unique_ptr<Expression> clone() override;
+
+        explicit CharacterExpression(char ch, std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope), "CharacterExpression")
+        {
+            this->character = ch;
+        }
+    };
 }
 
 #endif //RACKET_INTERPRETER_EXPRESSIONS_H

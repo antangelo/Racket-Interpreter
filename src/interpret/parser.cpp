@@ -192,6 +192,12 @@ namespace Parser
         }
     }
 
+    bool isNumber(const std::string &str)
+    {
+        return isdigit(str[0]) || ((str[0] == '-' || str[0] == '\'') && isdigit(str[1]))
+               || (str[0] == '\'' && str[1] == '-' && isdigit(str[2]));
+    }
+
     std::unique_ptr<Expressions::Expression> parse(std::string str, const std::shared_ptr<Expressions::Scope> &scope)
     {
         if (str[0] == '(' || str[0] == '[')
@@ -206,6 +212,12 @@ namespace Parser
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             return std::make_unique<Expressions::StringExpression>
                     (Expressions::StringExpression(parseString(str), std::move(localScope)));
+        }
+        else if (str[0] == '#' && str[1] == '\\')
+        {
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::make_unique<Expressions::CharacterExpression>
+                    (Expressions::CharacterExpression(str[2], std::move(localScope)));
         }
         else if (str[0] == '#')
         {
@@ -225,8 +237,10 @@ namespace Parser
             return std::unique_ptr<Expressions::Expression>(
                     new Expressions::BooleanValueExpression(false, std::move(localScope)));
         }
-        else if (isdigit(str[0]) || (str[0] == '-' && isdigit(str[1])))
+        else if (isNumber(str))
         {
+            if (str[0] == '\'') str = str.substr(1);
+
             try
             {
                 std::unique_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
@@ -240,7 +254,21 @@ namespace Parser
                 std::cerr << exception.what() << std::endl;
             }
         }
-        else if (str[0] == '\'')
+        else if ((str[0] == '\'' || str[0] == '`') && str[1] == '(')
+        {
+            std::vector<std::string> strLst = parseTuple(str.substr(1));
+            std::list<std::unique_ptr<Expressions::Expression>> list;
+
+            for (auto &s : strLst)
+            {
+                list.push_back(parse("'" + s, scope));
+            }
+
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::make_unique<Expressions::ListExpression>(Expressions::ListExpression(std::move(list),
+                                                                                             std::move(localScope)));
+        }
+        else if (str[0] == '\'' || str[0] == '`')
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
             return std::make_unique<Expressions::SymbolExpression>(
