@@ -103,6 +103,68 @@ expr_ptr intToStringFunc(expression_vector args, scope_ptr scope)
     throw std::invalid_argument("Expected rational, found " + args[0]->toString());
 }
 
+expr_ptr stringToListFn(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto str = dynamic_cast<Expressions::StringExpression *>(args[0].get()))
+    {
+        std::list<std::unique_ptr<Expressions::Expression>> list;
+
+        for (auto &chr : str->str)
+        {
+            list.push_back(std::make_unique<Expressions::CharacterExpression>(Expressions::CharacterExpression(chr,
+                                                                                                               std::make_shared<Expressions::Scope>(
+                                                                                                                       Expressions::Scope(
+                                                                                                                               scope)))));
+        }
+
+        return std::make_unique<Expressions::ListExpression>(
+                Expressions::ListExpression(std::move(list), std::move(scope)));
+    }
+
+    throw std::invalid_argument("Expected string, found " + args[0]->toString());
+}
+
+expr_ptr listToStringFn(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto lst = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+    {
+        std::string str;
+
+        for (auto &chrexp : lst->list)
+        {
+            if (auto chr = dynamic_cast<Expressions::CharacterExpression *>(chrexp.get()))
+            {
+                str.push_back(chr->character);
+            }
+            else throw std::invalid_argument("Expected character, found " + chrexp->toString());
+        }
+
+        return std::make_unique<Expressions::StringExpression>(Expressions::StringExpression(str, std::move(scope)));
+    }
+
+    throw std::invalid_argument("Expected string, found " + args[0]->toString());
+}
+
+expr_ptr charEqualFn(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 2);
+
+    for (auto &arg : args)
+    {
+        if (arg->type() != "CharacterExpression")
+            throw std::invalid_argument("Expected string, found " + arg->toString());
+    }
+
+    return std::make_unique<Expressions::BooleanValueExpression>
+            (Expressions::BooleanValueExpression(
+                    args[0]->toString() == args[1]->toString(),
+                    std::move(scope)));
+}
+
 void register_string_functions()
 {
     Functions::funcMap["string?"] = stringPredicateFunc;
@@ -110,4 +172,7 @@ void register_string_functions()
     Functions::funcMap["string->symbol"] = stringToSymbolFunc;
     Functions::funcMap["string->int"] = stringToIntFunc;
     Functions::funcMap["int->string"] = intToStringFunc;
+    Functions::funcMap["string->list"] = stringToListFn;
+    Functions::funcMap["list->string"] = listToStringFn;
+    Functions::funcMap["char=?"] = charEqualFn;
 }

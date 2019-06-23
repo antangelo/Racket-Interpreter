@@ -45,7 +45,42 @@ namespace ListFunctions
 
             return std::move(list->list.front());
         }
-        else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
+
+    expr_ptr secondFn(expression_vector args, const scope_ptr & /* scope */)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            list->list.pop_front();
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            return std::move(list->list.front());
+        }
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
+
+    expr_ptr thirdFn(expression_vector args, const scope_ptr & /* scope */)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            list->list.pop_front();
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            list->list.pop_front();
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            return std::move(list->list.front());
+        }
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
     }
 
     expr_ptr restFn(expression_vector args, const scope_ptr & /* scope */)
@@ -59,31 +94,56 @@ namespace ListFunctions
             list->list.pop_front();
             return std::move(args[0]);
         }
-        else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
     }
 
     expr_ptr emptyPredicateFn(expression_vector args, scope_ptr scope)
     {
         Functions::arg_count_check(args, 1);
+        bool isEmpty = false;
 
         if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
         {
-            return std::make_unique<Expressions::BooleanValueExpression>
-                    (Expressions::BooleanValueExpression(list->list.empty(), std::move(scope)));
+            isEmpty = list->list.empty();
         }
-        else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(isEmpty, std::move(scope)));
     }
 
     expr_ptr consPredicateFn(expression_vector args, scope_ptr scope)
     {
         Functions::arg_count_check(args, 1);
+        bool isCons = false;
 
         if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
         {
-            return std::make_unique<Expressions::BooleanValueExpression>
-                    (Expressions::BooleanValueExpression(!list->list.empty(), std::move(scope)));
+            isCons = !list->list.empty();
         }
-        else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(isCons, std::move(scope)));
+    }
+
+    expr_ptr memberPredicate(expression_vector args, scope_ptr scope)
+    {
+        Functions::arg_count_check(args, 2);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[1].get()))
+        {
+            std::string test = args[0]->toString();
+            bool member = false;
+            for (auto &expr : list->list)
+            {
+                member = expr->toString() == test;
+                if (member) break;
+            }
+
+            return std::make_unique<Expressions::BooleanValueExpression>
+                    (Expressions::BooleanValueExpression(member, std::move(scope)));
+        }
+
+        throw std::invalid_argument("Expected list, found " + args[1]->toString());
     }
 }
 
@@ -92,7 +152,10 @@ void register_list_functions()
     Functions::funcMap["cons"] = ListFunctions::consFn;
     Functions::funcMap["list"] = ListFunctions::listFn;
     Functions::funcMap["first"] = ListFunctions::firstFn;
+    Functions::funcMap["second"] = ListFunctions::secondFn;
+    Functions::funcMap["third"] = ListFunctions::thirdFn;
     Functions::funcMap["rest"] = ListFunctions::restFn;
     Functions::funcMap["empty?"] = ListFunctions::emptyPredicateFn;
     Functions::funcMap["cons?"] = ListFunctions::consPredicateFn;
+    Functions::funcMap["member?"] = ListFunctions::memberPredicate;
 }
