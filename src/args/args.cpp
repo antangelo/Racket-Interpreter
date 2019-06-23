@@ -12,7 +12,7 @@ namespace CLI
         boost::program_options::options_description desc("Opts");
         desc.add_options()
                 ("help,h", "Usage info")
-                ("require,t", boost::program_options::value<boost::filesystem::path>(), "Require file");
+                ("require,t", boost::program_options::value<std::vector<boost::filesystem::path>>(), "Require file");
 
         boost::program_options::variables_map variables;
         try
@@ -27,10 +27,14 @@ namespace CLI
 
             if (variables.count("require"))
             {
-                boost::filesystem::path file = variables["require"].as<boost::filesystem::path>();
-                boost::filesystem::fstream fileIn(file);
+                std::vector<boost::filesystem::path> files = variables["require"].as<std::vector<boost::filesystem::path>>();
 
-                Interpreter::repl(fileIn, globalScope, true);
+                for (auto &file : files)
+                {
+                    boost::filesystem::fstream fileIn(file);
+
+                    Interpreter::repl(fileIn, globalScope, true);
+                }
             }
         }
         catch (boost::program_options::error &e)
