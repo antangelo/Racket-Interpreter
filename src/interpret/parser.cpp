@@ -39,7 +39,7 @@ namespace Parser
     std::vector<std::string> parseTuple(const std::string &str)
     {
         int nestedTupleCount = 0;
-        bool inString = false;
+        bool inString = false, inComment = false;
         std::vector<std::string> rtn;
         std::string elem;
 
@@ -49,6 +49,13 @@ namespace Parser
 
             if (chr == '"' && index >= 1 && str[index - 1] != '\\')
                 inString = !inString;
+            else if (chr == ';') inComment = true;
+
+            if (inComment)
+            {
+                if (chr == '\n') inComment = false;
+                continue;
+            }
 
             if (inString)
             {
