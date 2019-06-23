@@ -408,6 +408,69 @@ expr_ptr absFn(expression_vector args, const scope_ptr & /* scope */)
     else throw std::invalid_argument("Expected number, found " + args[0]->toString());
 }
 
+expr_ptr floorFn(expression_vector args, const scope_ptr & /* scope */)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        boost::rational<int> val = rational->mValue;
+        int modulo = val.numerator() % val.denominator();
+
+        rational->mValue = val - boost::rational<int>(modulo, val.denominator());
+
+        return std::move(args[0]);
+    }
+    else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        inexact->value = floor(inexact->value);
+
+        return std::move(args[0]);
+    }
+    else throw std::invalid_argument("Expected number, found " + args[0]->toString());
+}
+
+expr_ptr ceilFn(expression_vector args, const scope_ptr & /* scope */)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        boost::rational<int> val = rational->mValue;
+        int modulo = val.numerator() % val.denominator();
+
+        if (modulo != 0) modulo -= val.denominator();
+
+        rational->mValue = val - boost::rational<int>(modulo, val.denominator());
+
+        return std::move(args[0]);
+    }
+    else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        inexact->value = ceil(inexact->value);
+
+        return std::move(args[0]);
+    }
+    else throw std::invalid_argument("Expected number, found " + args[0]->toString());
+}
+
+expr_ptr zeroPredicate(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(rational->mValue == 0, std::move(scope)));
+    }
+    else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(inexact->value == 0, std::move(scope)));
+    }
+    else throw std::invalid_argument("Expected number, found " + args[0]->toString());
+}
+
 void register_math_functions()
 {
     Functions::funcMap["+"] = plus_func;
@@ -420,5 +483,8 @@ void register_math_functions()
     Functions::funcMap["max"] = funcMax;
     Functions::funcMap["min"] = funcMin;
     Functions::funcMap["abs"] = absFn;
+    Functions::funcMap["floor"] = floorFn;
+    Functions::funcMap["ceiling"] = ceilFn;
+    Functions::funcMap["zero?"] = zeroPredicate;
 }
 
