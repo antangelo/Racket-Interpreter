@@ -166,6 +166,15 @@ namespace Functions
         return Expressions::evaluate(std::move(args[1]));
     }
 
+    std::unique_ptr<Expressions::Expression> procedurePredicate(expression_vector args,
+                                                                std::shared_ptr<Expressions::Scope> scope)
+    {
+        Functions::arg_count_check(args, 1);
+
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(args[0]->type() == "FunctionExpression", std::move(scope)));
+    }
+
     void registerFunctions()
     {
         specialFormMap["define"] = define_form;
@@ -182,6 +191,7 @@ namespace Functions
         funcMap["display"] = display_func;
         funcMap["newline"] = newline_func;
         funcMap["begin"] = begin_func;
+        funcMap["procedure?"] = procedurePredicate;
     }
 
     std::unique_ptr<Expressions::Expression>
