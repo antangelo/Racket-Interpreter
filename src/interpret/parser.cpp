@@ -214,6 +214,12 @@ namespace Parser
                                                                                              std::move(localScope)));
             return std::move(expr);
         }
+        else if (str[0] == '\'' && str[1] == '"')
+        {
+            std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
+            return std::make_unique<Expressions::StringExpression>
+                    (Expressions::StringExpression(parseString(str.substr(1)), std::move(localScope)));
+        }
         else if (str[0] == '"')
         {
             std::shared_ptr<Expressions::Scope> localScope(new Expressions::Scope(scope));
