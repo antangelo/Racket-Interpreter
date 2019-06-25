@@ -145,6 +145,56 @@ namespace ListFunctions
 
         throw std::invalid_argument("Expected list, found " + args[1]->toString());
     }
+
+    expr_ptr lengthFunction(expression_vector args, scope_ptr scope)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            return std::make_unique<Expressions::NumericalValueExpression>
+                    (Expressions::NumericalValueExpression(list->list.size(), std::move(scope)));
+        }
+
+        throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
+
+    expr_ptr appendFunction(expression_vector args, const scope_ptr &/* scope */)
+    {
+        if (args.empty()) throw std::invalid_argument("Expected at least one argument, found none");
+
+        if (auto l1 = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            for (int i = 1; i < args.size(); ++i)
+            {
+                if (auto list = dynamic_cast<Expressions::ListExpression *>(args[i].get()))
+                {
+                    for (auto &elem : list->list)
+                    {
+                        l1->list.push_back(std::move(elem));
+                    }
+                }
+                else throw std::invalid_argument("Expected list, found " + args[i]->toString());
+            }
+
+            return std::move(args[0]);
+        }
+
+        throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
+
+    expr_ptr reverseFn(expression_vector args, const scope_ptr & /* scope */)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            list->list.reverse();
+
+            return std::move(args[0]);
+        }
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
 }
 
 void register_list_functions()
@@ -158,4 +208,7 @@ void register_list_functions()
     Functions::funcMap["empty?"] = ListFunctions::emptyPredicateFn;
     Functions::funcMap["cons?"] = ListFunctions::consPredicateFn;
     Functions::funcMap["member?"] = ListFunctions::memberPredicate;
+    Functions::funcMap["length"] = ListFunctions::lengthFunction;
+    Functions::funcMap["append"] = ListFunctions::appendFunction;
+    Functions::funcMap["reverse"] = ListFunctions::reverseFn;
 }

@@ -587,6 +587,25 @@ expr_ptr subOneFn(expression_vector args, const scope_ptr & /* scope */)
     else throw std::invalid_argument("Expected number, found " + args[0]->toString());
 }
 
+expr_ptr integerPredicate(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(rational->mValue.denominator() == 1, std::move(scope)));
+    }
+    else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(inexact->value - (int) inexact->value == 0, std::move(scope)));
+    }
+    else
+        return std::make_unique<Expressions::BooleanValueExpression>
+                (Expressions::BooleanValueExpression(false, std::move(scope)));
+}
+
 void register_math_functions()
 {
     Functions::funcMap["+"] = plus_func;
@@ -608,5 +627,6 @@ void register_math_functions()
     Functions::funcMap["even?"] = evenPredicate;
     Functions::funcMap["add1"] = addOneFn;
     Functions::funcMap["sub1"] = subOneFn;
+    Functions::funcMap["integer?"] = integerPredicate;
 }
 

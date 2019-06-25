@@ -165,6 +165,17 @@ expr_ptr charEqualFn(expression_vector args, scope_ptr scope)
                     std::move(scope)));
 }
 
+expr_ptr stringLTFunc(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 2);
+    validate_string_fn(args);
+
+    return std::make_unique<Expressions::BooleanValueExpression>
+            (Expressions::BooleanValueExpression(
+                    args[0]->toString() < args[1]->toString(),
+                    std::move(scope)));
+}
+
 void register_string_functions()
 {
     Functions::funcMap["string?"] = stringPredicateFunc;
@@ -175,4 +186,5 @@ void register_string_functions()
     Functions::funcMap["string->list"] = stringToListFn;
     Functions::funcMap["list->string"] = listToStringFn;
     Functions::funcMap["char=?"] = charEqualFn;
+    Functions::funcMap["string<?"] = stringLTFunc;
 }
