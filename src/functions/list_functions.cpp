@@ -3,6 +3,7 @@
 //
 
 #include "functions.h"
+#include "../interpret/interpret.h"
 
 namespace ListFunctions
 {
@@ -195,6 +196,98 @@ namespace ListFunctions
         }
         else throw std::invalid_argument("Expected list, found " + args[0]->toString());
     }
+
+    int assertListsAreOfEqualSize(const expression_vector &listVector, int startIndex)
+    {
+        int length = -1;
+
+        for (int i = startIndex; i < listVector.size(); ++i)
+        {
+            if (auto list = dynamic_cast<Expressions::ListExpression *>(listVector[i].get()))
+            {
+                if (length == -1) length = list->list.size();
+                else if (length != list->list.size())
+                    throw std::invalid_argument(
+                            "List length mismatch, expected " + std::to_string(length) + ", found " +
+                            std::to_string(list->list.size()));
+            }
+            else throw std::invalid_argument("Expected list, found " + listVector[i]->toString());
+        }
+
+        if (length == -1) throw std::invalid_argument("Expected at least one list, found none");
+        return length;
+    }
+
+    expression_vector getFuncCallParams(expression_vector &args, int listStartIndex)
+    {
+        expression_vector params;
+        for (int listIndex = listStartIndex; listIndex < args.size(); ++listIndex)
+        {
+            if (auto list = dynamic_cast<Expressions::ListExpression *>(args[listIndex].get()))
+            {
+                if (list->list.empty()) throw std::invalid_argument("Found empty list, expected non-empty");
+
+                params.push_back(std::move(list->list.back()));
+                list->list.pop_back();
+            }
+            else throw std::invalid_argument("Expected list, found " + args[listIndex]->toString());
+        }
+
+        return std::move(params);
+    }
+
+    expr_ptr foldr(expression_vector args, const scope_ptr & /* scope */)
+    {
+        if (args.size() < 3)
+            throw std::invalid_argument("Expected at least 3 arguments, found " + std::to_string(args.size()));
+
+        if (auto f = dynamic_cast<Expressions::FunctionExpression *>(args[0].get()))
+        {
+            std::unique_ptr<Expressions::Expression> result = std::move(args[1]);
+            int elems = assertListsAreOfEqualSize(args, 2);
+
+            for (int i = 0; i < elems; ++i)
+            {
+                expression_vector params = getFuncCallParams(args, 2);
+                params.push_back(std::move(result));
+                result = f->call(std::move(params));
+            }
+
+            return std::move(result);
+        }
+        else throw std::invalid_argument("Expected function, found " + args[0]->toString());
+    }
+
+    expr_ptr filter(expression_vector args, const scope_ptr & /* scope */)
+    {
+        Functions::arg_count_check(args, 2);
+
+        if (auto f = dynamic_cast<Expressions::FunctionExpression *>(args[0].get()))
+        {
+            if (auto list = dynamic_cast<Expressions::ListExpression *> (args[1].get()))
+            {
+                std::list<std::unique_ptr<Expressions::Expression>> listFinal;
+                for (auto &elem : list->list)
+                {
+                    expression_vector params;
+                    params.push_back(elem->clone());
+                    expr_ptr test = Interpreter::interpret(f->call(std::move(params)));
+
+                    if (auto b = dynamic_cast<Expressions::BooleanValueExpression *>(test.get()))
+                    {
+                        if (b->value) listFinal.push_back(std::move(elem));
+                    }
+                    else throw std::invalid_argument("Expected boolean, found " + test->toString());
+                }
+
+                list->list.clear();
+                list->list = std::move(listFinal);
+                return std::move(args[1]);
+            }
+            else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+        }
+        else throw std::invalid_argument("Expected function, found " + args[0]->toString());
+    }
 }
 
 void register_list_functions()
@@ -211,4 +304,7 @@ void register_list_functions()
     Functions::funcMap["length"] = ListFunctions::lengthFunction;
     Functions::funcMap["append"] = ListFunctions::appendFunction;
     Functions::funcMap["reverse"] = ListFunctions::reverseFn;
+
+    Functions::funcMap["foldr"] = ListFunctions::foldr;
+    Functions::funcMap["filter"] = ListFunctions::filter;
 }
