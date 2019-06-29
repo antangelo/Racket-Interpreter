@@ -176,6 +176,88 @@ expr_ptr stringLTFunc(expression_vector args, scope_ptr scope)
                     std::move(scope)));
 }
 
+int naturalFromRationalExpression(std::unique_ptr<Expressions::Expression> &expr)
+{
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(expr.get()))
+    {
+        if (rational->mValue.denominator() == 1)
+        {
+            return rational->mValue.numerator();
+        }
+    }
+
+    throw std::invalid_argument("Expected natural number, found " + expr->toString());
+}
+
+expr_ptr stringReplicateFn(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 2);
+    int times = naturalFromRationalExpression(args[0]);
+
+    if (auto str = dynamic_cast<Expressions::StringExpression *>(args[1].get()))
+    {
+        std::string rtn;
+        for (int i = 0; i < times; ++i)
+        {
+            rtn += str->str;
+        }
+
+        return std::make_unique<Expressions::StringExpression>(
+                Expressions::StringExpression(rtn, std::move(scope)));
+    }
+    else throw std::invalid_argument("Expected string, found " + args[1]->toString());
+}
+
+expr_ptr substringFn(expression_vector args, const scope_ptr &/* scope */)
+{
+    if (args.size() < 2) throw std::invalid_argument("Expected 2 arguments, found " + std::to_string(args.size()));
+    if (args.size() > 3) throw std::invalid_argument("Expected 3 arguments, found " + std::to_string(args.size()));
+
+    bool threeArgSubstr = args.size() == 3;
+    int x = naturalFromRationalExpression(args[1]);
+    int y = 0;
+    if (threeArgSubstr) y = naturalFromRationalExpression(args[2]);
+
+    if (auto str = dynamic_cast<Expressions::StringExpression *>(args[0].get()))
+    {
+        if (threeArgSubstr) str->str = str->str.substr(x, y);
+        else str->str = str->str.substr(x);
+
+        return std::move(args[0]);
+    }
+    else throw std::invalid_argument("Expected string, found " + args[0]->toString());
+}
+
+expr_ptr stringAppendFn(expression_vector args, scope_ptr scope)
+{
+    std::string rtn;
+
+    for (auto &expr : args)
+    {
+        if (auto str = dynamic_cast<Expressions::StringExpression *>(expr.get()))
+        {
+            rtn += str->str;
+        }
+        else throw std::invalid_argument("Expected string, found " + expr->toString());
+    }
+
+    return std::make_unique<Expressions::StringExpression>(Expressions::StringExpression(rtn, std::move(scope)));
+}
+
+expr_ptr charToIntFunc(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto arg = dynamic_cast<Expressions::CharacterExpression *>(args[0].get()))
+    {
+        return std::make_unique<Expressions::NumericalValueExpression>
+                (Expressions::NumericalValueExpression(arg->character, std::move(scope)));
+    }
+
+    throw std::invalid_argument("Expected character, found " + args[0]->toString());
+}
+
+
 void register_string_functions()
 {
     Functions::funcMap["string?"] = stringPredicateFunc;
@@ -187,4 +269,8 @@ void register_string_functions()
     Functions::funcMap["list->string"] = listToStringFn;
     Functions::funcMap["char=?"] = charEqualFn;
     Functions::funcMap["string<?"] = stringLTFunc;
+    Functions::funcMap["replicate"] = stringReplicateFn;
+    Functions::funcMap["substring"] = substringFn;
+    Functions::funcMap["string-append"] = stringAppendFn;
+    Functions::funcMap["char->integer"] = charToIntFunc;
 }

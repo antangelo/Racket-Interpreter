@@ -5,6 +5,11 @@
 #include "functions.h"
 #include "../interpret/interpret.h"
 
+namespace Interpreter
+{
+    void print(Expressions::expression_vector &steps);
+}
+
 namespace ListFunctions
 {
     typedef std::unique_ptr<Expressions::Expression> expr_ptr;
@@ -218,7 +223,7 @@ namespace ListFunctions
         return length;
     }
 
-    expression_vector getFuncCallParams(expression_vector &args, int listStartIndex)
+    expression_vector getFuncCallParamsBack(expression_vector &args, int listStartIndex)
     {
         expression_vector params;
         for (int listIndex = listStartIndex; listIndex < args.size(); ++listIndex)
@@ -229,6 +234,24 @@ namespace ListFunctions
 
                 params.push_back(std::move(list->list.back()));
                 list->list.pop_back();
+            }
+            else throw std::invalid_argument("Expected list, found " + args[listIndex]->toString());
+        }
+
+        return std::move(params);
+    }
+
+    expression_vector getFuncCallParamsFront(expression_vector &args, int listStartIndex)
+    {
+        expression_vector params;
+        for (int listIndex = listStartIndex; listIndex < args.size(); ++listIndex)
+        {
+            if (auto list = dynamic_cast<Expressions::ListExpression *>(args[listIndex].get()))
+            {
+                if (list->list.empty()) throw std::invalid_argument("Found empty list, expected non-empty");
+
+                params.push_back(std::move(list->list.front()));
+                list->list.pop_front();
             }
             else throw std::invalid_argument("Expected list, found " + args[listIndex]->toString());
         }
@@ -248,7 +271,29 @@ namespace ListFunctions
 
             for (int i = 0; i < elems; ++i)
             {
-                expression_vector params = getFuncCallParams(args, 2);
+                expression_vector params = getFuncCallParamsBack(args, 2);
+                params.push_back(std::move(result));
+                result = f->call(std::move(params));
+            }
+
+            return std::move(result);
+        }
+        else throw std::invalid_argument("Expected function, found " + args[0]->toString());
+    }
+
+    expr_ptr foldl(expression_vector args, const scope_ptr & /* scope */)
+    {
+        if (args.size() < 3)
+            throw std::invalid_argument("Expected at least 3 arguments, found " + std::to_string(args.size()));
+
+        if (auto f = dynamic_cast<Expressions::FunctionExpression *>(args[0].get()))
+        {
+            std::unique_ptr<Expressions::Expression> result = std::move(args[1]);
+            int elems = assertListsAreOfEqualSize(args, 2);
+
+            for (int i = 0; i < elems; ++i)
+            {
+                expression_vector params = getFuncCallParamsFront(args, 2);
                 params.push_back(std::move(result));
                 result = f->call(std::move(params));
             }
@@ -288,6 +333,93 @@ namespace ListFunctions
         }
         else throw std::invalid_argument("Expected function, found " + args[0]->toString());
     }
+
+    std::function<bool(const expr_ptr &, const expr_ptr &)>
+    racketPredicateAdapter(Expressions::FunctionExpression &function)
+    {
+        return [&function](const expr_ptr &arg0, const expr_ptr &arg1) -> bool
+        {
+            expression_vector args = expression_vector();
+            args.push_back(arg0->clone());
+            args.push_back(arg1->clone());
+
+            expr_ptr expr = function.call(std::move(args));
+            if (!expr->isValue()) expr = Interpreter::interpret(std::move(expr));
+            if (auto boolVal = dynamic_cast<Expressions::BooleanValueExpression *>(expr.get()))
+            {
+                return boolVal->value;
+            }
+            else throw std::invalid_argument("Function " + function.toString() + " cannot be cast to bool");
+        };
+    }
+
+    expr_ptr sortFn(expression_vector args, const scope_ptr &/* scope */)
+    {
+        Functions::arg_count_check(args, 2);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            if (auto func = dynamic_cast<Expressions::FunctionExpression *>(args[1].get()))
+            {
+                list->list.sort(racketPredicateAdapter(*func));
+                return std::move(args[0]);
+            }
+            else throw std::invalid_argument("Expected function, found " + args[1]->toString());
+        }
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
+
+    expr_ptr mapFn(expression_vector args, scope_ptr scope)
+    {
+        if (args.size() < 2)
+            throw std::invalid_argument("Expected at least 2 arguments, found " + std::to_string(args.size()));
+
+        if (auto f = dynamic_cast<Expressions::FunctionExpression *>(args[0].get()))
+        {
+            std::list<expr_ptr> returnList;
+            int elems = assertListsAreOfEqualSize(args, 1);
+
+            for (int i = 0; i < elems; ++i)
+            {
+                expression_vector params = getFuncCallParamsFront(args, 1);
+                returnList.push_back(Interpreter::interpret(f->call(std::move(params))));
+            }
+
+            return std::make_unique<Expressions::ListExpression>(
+                    Expressions::ListExpression(std::move(returnList), std::move(scope)));
+        }
+        else throw std::invalid_argument("Expected function, found " + args[0]->toString());
+    }
+
+    expr_ptr buildList(expression_vector args, scope_ptr scope)
+    {
+        Functions::arg_count_check(args, 2);
+
+        if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+        {
+            if (rational->mValue.denominator() == 1)
+            {
+                if (auto func = dynamic_cast<Expressions::FunctionExpression *>(args[1].get()))
+                {
+                    std::list<expr_ptr> list;
+
+                    for (int i = 0; i < rational->mValue.numerator(); ++i)
+                    {
+                        expression_vector params;
+                        params.push_back(std::make_unique<Expressions::NumericalValueExpression>(
+                                Expressions::NumericalValueExpression(i, scope)));
+                        list.push_back(Interpreter::interpret(func->call(std::move(params))));
+                    }
+
+                    return std::make_unique<Expressions::ListExpression>(
+                            Expressions::ListExpression(std::move(list), std::move(scope)));
+                }
+                else throw std::invalid_argument("Expected function, found " + args[1]->toString());
+            }
+        }
+
+        throw std::invalid_argument("Expected natural number, found " + args[0]->toString());
+    }
 }
 
 void register_list_functions()
@@ -306,5 +438,9 @@ void register_list_functions()
     Functions::funcMap["reverse"] = ListFunctions::reverseFn;
 
     Functions::funcMap["foldr"] = ListFunctions::foldr;
+    Functions::funcMap["foldl"] = ListFunctions::foldl;
     Functions::funcMap["filter"] = ListFunctions::filter;
+    Functions::funcMap["sort"] = ListFunctions::sortFn;
+    Functions::funcMap["map"] = ListFunctions::mapFn;
+    Functions::funcMap["build-list"] = ListFunctions::buildList;
 }
