@@ -21,7 +21,9 @@ add_executable(racquet src/main.cpp src/interpret/parser.cpp src/interpret/parse
         src/expressions/function_expressions.cpp src/functions/boolean_operations.cpp
         src/functions/math_functions.cpp src/interpret/interpret.cpp src/interpret/interpret.h
         src/functions/testing_functions.cpp src/interpret/repl.cpp src/args/args.cpp
-        src/args/args.h src/functions/symbol_functions.cpp src/functions/string_functions.cpp src/expressions/struct_expression.cpp src/expressions/struct_expression.h src/expressions/list_expression.cpp src/functions/list_functions.cpp)
+        src/args/args.h src/functions/symbol_functions.cpp src/functions/string_functions.cpp
+        src/expressions/struct_expression.cpp src/expressions/struct_expression.h src/expressions/list_expression.cpp
+        src/functions/list_functions.cpp)
 
 if (Boost_FOUND)
 

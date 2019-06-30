@@ -12,15 +12,15 @@ using Expressions::expression_vector;
 
 expr_ptr plus_func(expression_vector expr, scope_ptr scope)
 {
-    boost::rational<int> sum = 0;
-    double dSum = 0.0;
+    Expressions::NumericalValueExpression::numerical_type sum = 0;
+    Expressions::InexactNumberExpression::numerical_type dSum = 0.0;
     bool returnFloating = false;
 
     for (auto &i : expr)
     {
         if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(i.get()))
         {
-            sum += num->mValue;
+            sum += num->value;
         }
         else if (auto fl = dynamic_cast<Expressions::InexactNumberExpression *>(i.get()))
         {
@@ -48,8 +48,8 @@ expr_ptr sub_func(expression_vector expr, scope_ptr scope)
 {
     if (expr.empty()) throw std::invalid_argument("- expected at least 1 arg.");
 
-    boost::rational<int> diff = 0;
-    double dDiff = 0.0;
+    Expressions::NumericalValueExpression::numerical_type diff = 0;
+    Expressions::InexactNumberExpression::numerical_type dDiff = 0.0;
     bool returnFloating = false;
 
     if (auto first = dynamic_cast<Expressions::NumericalValueExpression *>(expr.front().get()))
@@ -57,12 +57,12 @@ expr_ptr sub_func(expression_vector expr, scope_ptr scope)
         if (expr.size() == 1)
         {
             return std::unique_ptr<Expressions::Expression>
-                    (new Expressions::NumericalValueExpression(-1 * first->mValue,
+                    (new Expressions::NumericalValueExpression(-1 * first->value,
                                                                std::make_unique<Expressions::Scope>(
                                                                        Expressions::Scope(std::move(scope)))));
         }
 
-        diff = first->mValue;
+        diff = first->value;
     }
     else if (auto dFirst = dynamic_cast<Expressions::InexactNumberExpression *>(expr.front().get()))
     {
@@ -84,7 +84,7 @@ expr_ptr sub_func(expression_vector expr, scope_ptr scope)
         auto &j = expr[i];
         if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(j.get()))
         {
-            diff -= num->mValue;
+            diff -= num->value;
         }
         else if (auto dNum = dynamic_cast<Expressions::InexactNumberExpression *>(j.get()))
         {
@@ -110,15 +110,15 @@ expr_ptr sub_func(expression_vector expr, scope_ptr scope)
 
 expr_ptr mult_func(expression_vector expr, scope_ptr scope)
 {
-    boost::rational<int> product(1);
-    double dProd = 1.0;
+    Expressions::NumericalValueExpression::numerical_type product(1);
+    Expressions::InexactNumberExpression::numerical_type dProd = 1.0;
     bool returnFloating = false;
 
     for (auto &i : expr)
     {
         if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(i.get()))
         {
-            product *= num->mValue;
+            product *= num->value;
         }
         else if (auto fl = dynamic_cast<Expressions::InexactNumberExpression *>(i.get()))
         {
@@ -146,8 +146,8 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
 {
     if (expr.empty()) throw std::invalid_argument("/ expected at least 1 arg.");
 
-    boost::rational<int> quotient = 1;
-    double dQuot = 1.0;
+    Expressions::NumericalValueExpression::numerical_type quotient = 1;
+    Expressions::InexactNumberExpression::numerical_type dQuot = 1.0;
     bool returnFloating = false;
 
     if (auto first = dynamic_cast<Expressions::NumericalValueExpression *>(expr.front().get()))
@@ -155,12 +155,12 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
         if (expr.size() == 1)
         {
             return std::unique_ptr<Expressions::Expression>
-                    (new Expressions::NumericalValueExpression(1 / first->mValue,
+                    (new Expressions::NumericalValueExpression(1 / first->value,
                                                                std::make_unique<Expressions::Scope>(
                                                                        Expressions::Scope(std::move(scope)))));
         }
 
-        quotient = first->mValue;
+        quotient = first->value;
     }
     else if (auto dFirst = dynamic_cast<Expressions::InexactNumberExpression *>(expr.front().get()))
     {
@@ -182,7 +182,7 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
         auto &j = expr[i];
         if (auto num = dynamic_cast<Expressions::NumericalValueExpression *>(j.get()))
         {
-            quotient /= num->mValue;
+            quotient /= num->value;
         }
         else if (auto dNum = dynamic_cast<Expressions::InexactNumberExpression *>(j.get()))
         {
@@ -207,15 +207,15 @@ expr_ptr funcSqrt(expression_vector args, scope_ptr scope)
 {
     Functions::arg_count_check(args, 1);
 
-    double result = 0;
+    Expressions::InexactNumberExpression::numerical_type result = 0;
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args.front().get()))
     {
-        result = sqrt(boost::rational_cast<double>(rational->mValue));
+        result = sqrt(boost::rational_cast<double>(rational->value));
     }
     else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args.front().get()))
     {
-        result = sqrt(db->value);
+        result = boost::multiprecision::sqrt(db->value);
     }
     else throw std::invalid_argument("sqrt expected number, found " + args.front()->toString());
 
@@ -229,29 +229,29 @@ expr_ptr funcSqr(expression_vector args, scope_ptr scope)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args.front().get()))
     {
-        boost::rational<int> result = rational->mValue * rational->mValue;
+        Expressions::NumericalValueExpression::numerical_type result = rational->value * rational->value;
         return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
                                                                 (result, std::move(scope)));
     }
     else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args.front().get()))
     {
-        double result = db->value * db->value;
+        Expressions::InexactNumberExpression::numerical_type result = db->value * db->value;
         return std::make_unique<Expressions::InexactNumberExpression>
                 (Expressions::InexactNumberExpression(result, std::move(scope)));
     }
-    else throw std::invalid_argument("sqrt expected number, found " + args.front()->toString());
+    else throw std::invalid_argument("sqr expected number, found " + args.front()->toString());
 }
 
 expr_ptr funcExpt(expression_vector args, scope_ptr scope)
 {
     Functions::arg_count_check(args, 2);
 
-    double base, exponent, result;
+    boost::multiprecision::cpp_dec_float_50 base, exponent, result;
     bool exactBase = false, exactExp = false;
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        base = boost::rational_cast<double>(rational->mValue);
+        base = boost::rational_cast<boost::multiprecision::cpp_dec_float_50>(rational->value);
         exactBase = true;
     }
     else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
@@ -262,7 +262,7 @@ expr_ptr funcExpt(expression_vector args, scope_ptr scope)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[1].get()))
     {
-        exponent = boost::rational_cast<double>(rational->mValue);
+        exponent = boost::rational_cast<boost::multiprecision::cpp_dec_float_50>(rational->value);
         exactExp = true;
     }
     else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args[1].get()))
@@ -271,7 +271,7 @@ expr_ptr funcExpt(expression_vector args, scope_ptr scope)
     }
     else throw std::invalid_argument("sqrt expected number, found " + args[1]->toString());
 
-    result = pow(base, exponent);
+    result = boost::multiprecision::pow(base, exponent);
 
     if (exactBase && exactExp)
     {
@@ -289,8 +289,8 @@ expr_ptr funcMax(expression_vector args, scope_ptr scope)
 {
     if (args.empty()) throw std::invalid_argument("Error: Expected at least 1 argument, but found none.");
 
-    boost::rational<int> rationalMax;
-    double inexactMax = 0;
+    Expressions::NumericalValueExpression::numerical_type rationalMax;
+    Expressions::InexactNumberExpression::numerical_type inexactMax = 0;
     bool firstRational = true, firstInexact = true;
 
     for (auto &expr : args)
@@ -299,12 +299,12 @@ expr_ptr funcMax(expression_vector args, scope_ptr scope)
         {
             if (firstRational)
             {
-                rationalMax = rational->mValue;
+                rationalMax = rational->value;
                 firstRational = false;
             }
             else
             {
-                rationalMax = rational->mValue > rationalMax ? rational->mValue : rationalMax;
+                rationalMax = rational->value > rationalMax ? rational->value : rationalMax;
             }
         }
         else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(expr.get()))
@@ -341,8 +341,8 @@ expr_ptr funcMin(expression_vector args, scope_ptr scope)
 {
     if (args.empty()) throw std::invalid_argument("Error: Expected at least 1 argument, but found none.");
 
-    boost::rational<int> rationalMax;
-    double inexactMax = 0;
+    Expressions::NumericalValueExpression::numerical_type rationalMax;
+    Expressions::InexactNumberExpression::numerical_type inexactMax = 0;
     bool firstRational = true, firstInexact = true;
 
     for (auto &expr : args)
@@ -351,12 +351,12 @@ expr_ptr funcMin(expression_vector args, scope_ptr scope)
         {
             if (firstRational)
             {
-                rationalMax = rational->mValue;
+                rationalMax = rational->value;
                 firstRational = false;
             }
             else
             {
-                rationalMax = rational->mValue < rationalMax ? rational->mValue : rationalMax;
+                rationalMax = rational->value < rationalMax ? rational->value : rationalMax;
             }
         }
         else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(expr.get()))
@@ -395,7 +395,7 @@ expr_ptr absFn(expression_vector args, const scope_ptr & /* scope */)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        if (rational->mValue < 0) rational->mValue = -rational->mValue;
+        if (rational->value < 0) rational->value = -rational->value;
 
         return std::move(args[0]);
     }
@@ -414,10 +414,10 @@ expr_ptr floorFn(expression_vector args, const scope_ptr & /* scope */)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        boost::rational<int> val = rational->mValue;
-        int modulo = val.numerator() % val.denominator();
+        Expressions::NumericalValueExpression::numerical_type val = rational->value;
+        boost::multiprecision::cpp_int modulo = val.numerator() % val.denominator();
 
-        rational->mValue = val - boost::rational<int>(modulo, val.denominator());
+        rational->value = val - Expressions::NumericalValueExpression::numerical_type(modulo, val.denominator());
 
         return std::move(args[0]);
     }
@@ -436,12 +436,12 @@ expr_ptr ceilFn(expression_vector args, const scope_ptr & /* scope */)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        boost::rational<int> val = rational->mValue;
-        int modulo = val.numerator() % val.denominator();
+        Expressions::NumericalValueExpression::numerical_type val = rational->value;
+        boost::multiprecision::cpp_int modulo = val.numerator() % val.denominator();
 
         if (modulo != 0) modulo -= val.denominator();
 
-        rational->mValue = val - boost::rational<int>(modulo, val.denominator());
+        rational->value = val - Expressions::NumericalValueExpression::numerical_type(modulo, val.denominator());
 
         return std::move(args[0]);
     }
@@ -461,7 +461,7 @@ expr_ptr zeroPredicate(expression_vector args, scope_ptr scope)
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
         return std::make_unique<Expressions::BooleanValueExpression>
-                (Expressions::BooleanValueExpression(rational->mValue == 0, std::move(scope)));
+                (Expressions::BooleanValueExpression(rational->value == 0, std::move(scope)));
     }
     else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
     {
@@ -478,7 +478,7 @@ expr_ptr negativePredicate(expression_vector args, scope_ptr scope)
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
         return std::make_unique<Expressions::BooleanValueExpression>
-                (Expressions::BooleanValueExpression(rational->mValue < 0, std::move(scope)));
+                (Expressions::BooleanValueExpression(rational->value < 0, std::move(scope)));
     }
     else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
     {
@@ -495,7 +495,7 @@ expr_ptr positivePredicate(expression_vector args, scope_ptr scope)
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
         return std::make_unique<Expressions::BooleanValueExpression>
-                (Expressions::BooleanValueExpression(rational->mValue > 0, std::move(scope)));
+                (Expressions::BooleanValueExpression(rational->value > 0, std::move(scope)));
     }
     else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
     {
@@ -511,7 +511,7 @@ expr_ptr oddPredicate(expression_vector args, scope_ptr scope)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        bool result = rational->mValue.denominator() == 1 ? rational->mValue.numerator() % 2 != 0 : false;
+        bool result = rational->value.denominator() == 1 ? rational->value.numerator() % 2 != 0 : false;
 
         return std::make_unique<Expressions::BooleanValueExpression>
                 (Expressions::BooleanValueExpression(result, std::move(scope)));
@@ -533,7 +533,7 @@ expr_ptr evenPredicate(expression_vector args, scope_ptr scope)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        bool result = rational->mValue.denominator() == 1 ? rational->mValue.numerator() % 2 == 0 : false;
+        bool result = rational->value.denominator() == 1 ? rational->value.numerator() % 2 == 0 : false;
 
         return std::make_unique<Expressions::BooleanValueExpression>
                 (Expressions::BooleanValueExpression(result, std::move(scope)));
@@ -555,7 +555,7 @@ expr_ptr addOneFn(expression_vector args, const scope_ptr & /* scope */)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        rational->mValue += 1;
+        rational->value += 1;
 
         return std::move(args[0]);
     }
@@ -574,7 +574,7 @@ expr_ptr subOneFn(expression_vector args, const scope_ptr & /* scope */)
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        rational->mValue -= 1;
+        rational->value -= 1;
 
         return std::move(args[0]);
     }
@@ -594,7 +594,7 @@ expr_ptr integerPredicate(expression_vector args, scope_ptr scope)
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
         return std::make_unique<Expressions::BooleanValueExpression>
-                (Expressions::BooleanValueExpression(rational->mValue.denominator() == 1, std::move(scope)));
+                (Expressions::BooleanValueExpression(rational->value.denominator() == 1, std::move(scope)));
     }
     else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
     {

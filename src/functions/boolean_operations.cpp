@@ -5,7 +5,8 @@
 #include "functions.h"
 #include "../interpret/parser.h"
 
-bool compare(const std::string &comp, const boost::rational<int> &v1, const boost::rational<int> &v2)
+bool compare(const std::string &comp, const Expressions::NumericalValueExpression::numerical_type &v1,
+             const Expressions::NumericalValueExpression::numerical_type &v2)
 {
     if (comp == "<")
         return v1 < v2;
@@ -27,12 +28,12 @@ void makeCompFunction(const std::string &comp)
                                       std::shared_ptr<Expressions::Scope> scope) -> std::unique_ptr<Expressions::Expression>
     {
         if (expr.size() < 2) throw std::invalid_argument("Expected at least two arguments"); //TODO: arg count
-        boost::rational<int> compVal;
+        Expressions::NumericalValueExpression::numerical_type compVal;
         bool retValue = true;
 
         if (auto e1 = dynamic_cast<Expressions::NumericalValueExpression *>(expr[0].get()))
         {
-            compVal = e1->mValue;
+            compVal = e1->value;
         }
         else throw std::invalid_argument("Expected number, found " + expr[0]->toString());
 
@@ -40,10 +41,10 @@ void makeCompFunction(const std::string &comp)
         {
             if (auto ei = dynamic_cast<Expressions::NumericalValueExpression *>(expr[i].get()))
             {
-                retValue = retValue && compare(comp, compVal, ei->mValue);
+                retValue = retValue && compare(comp, compVal, ei->value);
                 if (!retValue) break;
 
-                compVal = ei->mValue;
+                compVal = ei->value;
             }
             else throw std::invalid_argument("Expected number, found " + expr[i]->toString());
         }

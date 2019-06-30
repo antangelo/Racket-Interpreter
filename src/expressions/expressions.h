@@ -14,6 +14,8 @@
 #include <map>
 
 #include "boost/rational.hpp"
+#include "boost/multiprecision/cpp_int.hpp"
+#include "boost/multiprecision/cpp_dec_float.hpp"
 
 namespace Expressions
 {
@@ -277,7 +279,9 @@ namespace Expressions
     class NumericalValueExpression : public Expression
     {
     public:
-        boost::rational<int> mValue;
+        typedef boost::rational<boost::multiprecision::cpp_int> numerical_type;
+
+        numerical_type value;
 
         bool isValue() override;
 
@@ -293,7 +297,7 @@ namespace Expressions
             if (str.find('/') != std::string::npos)
             {
                 bool slashPassed = false;
-                int numerator = 0, denominator = 0;
+                boost::multiprecision::cpp_int numerator = 0, denominator = 0;
                 for (int i = 0; i < str.length(); ++i)
                 {
                     if (str[i] == '/' && !slashPassed)
@@ -316,40 +320,43 @@ namespace Expressions
                     }
                 }
 
-                mValue = boost::rational<int>(numerator, denominator);
+                value = numerical_type(numerator, denominator);
             }
             else
             {
-                double value = std::stod(str);
+                using namespace boost::multiprecision;
+                cpp_dec_float_50 decimal(str);
 
                 int denominator = 1;
 
-                while (value - (int) value != 0)
+                while (decimal - cpp_dec_float_50(cpp_int(decimal)) != 0)
                 {
-                    value *= 10;
+                    decimal *= 10;
                     denominator *= 10;
                 }
 
-                mValue = boost::rational<int>((int) value, denominator);
+                value = numerical_type(cpp_int(decimal), denominator);
             }
         }
 
-        explicit NumericalValueExpression(boost::rational<int> value, std::shared_ptr<Scope> scope)
+        explicit NumericalValueExpression(numerical_type value, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
-            mValue = value;
+            this->value = std::move(value);
         }
 
-        explicit NumericalValueExpression(int numerator, int denominator, std::shared_ptr<Scope> scope)
+        explicit NumericalValueExpression(const boost::multiprecision::cpp_int &numerator,
+                                          const boost::multiprecision::cpp_int &denominator,
+                                          std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
-            mValue = boost::rational<int>(numerator, denominator);
+            this->value = numerical_type(numerator, denominator);
         }
 
         explicit NumericalValueExpression(double value, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
-            int denominator = 1;
+            boost::multiprecision::cpp_int denominator = 1;
 
             while (value - (int) value != 0)
             {
@@ -357,21 +364,37 @@ namespace Expressions
                 denominator *= 10;
             }
 
-            mValue = boost::rational<int>((int) value, denominator);
+            this->value = numerical_type(boost::multiprecision::cpp_int(value), denominator);
+        }
+
+        explicit NumericalValueExpression(boost::multiprecision::cpp_dec_float_50 value, std::shared_ptr<Scope> scope)
+                : Expression(std::move(scope), "NumericalValueExpression")
+        {
+            boost::multiprecision::cpp_int denominator = 1;
+
+            while (value - boost::multiprecision::floor(value) != 0)
+            {
+                value *= 10;
+                denominator *= 10;
+            }
+
+            this->value = numerical_type(boost::multiprecision::cpp_int(value), denominator);
         }
 
     private:
         NumericalValueExpression(const NumericalValueExpression &old_expr, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
-            this->mValue = old_expr.mValue;
+            this->value = old_expr.value;
         }
     };
 
     class InexactNumberExpression : public Expression
     {
     public:
-        double value;
+        typedef boost::multiprecision::cpp_dec_float_50 numerical_type;
+
+        numerical_type value;
 
         bool isValue() override;
 
@@ -381,10 +404,10 @@ namespace Expressions
 
         std::unique_ptr<Expression> clone() override;
 
-        explicit InexactNumberExpression(double value, std::shared_ptr<Scope> scope)
+        explicit InexactNumberExpression(numerical_type value, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "InexactNumberExpression")
         {
-            this->value = value;
+            this->value = std::move(value);
         }
     };
 

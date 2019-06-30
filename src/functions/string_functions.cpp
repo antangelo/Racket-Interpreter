@@ -3,6 +3,7 @@
 //
 
 #include "functions.h"
+#include "boost/multiprecision/cpp_int.hpp"
 
 typedef std::unique_ptr<Expressions::Expression> expr_ptr;
 typedef std::shared_ptr<Expressions::Scope> scope_ptr;
@@ -89,7 +90,7 @@ expr_ptr intToStringFunc(expression_vector args, scope_ptr scope)
 
     if (auto arg = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
     {
-        boost::rational<int> num = arg->mValue;
+        Expressions::NumericalValueExpression::numerical_type num = arg->value;
         if (num.denominator() != 1)
             throw std::invalid_argument("Expected rational, found " + args[0]->toString());
 
@@ -176,13 +177,13 @@ expr_ptr stringLTFunc(expression_vector args, scope_ptr scope)
                     std::move(scope)));
 }
 
-int naturalFromRationalExpression(std::unique_ptr<Expressions::Expression> &expr)
+boost::multiprecision::cpp_int naturalFromRationalExpression(std::unique_ptr<Expressions::Expression> &expr)
 {
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(expr.get()))
     {
-        if (rational->mValue.denominator() == 1)
+        if (rational->value.denominator() == 1)
         {
-            return rational->mValue.numerator();
+            return rational->value.numerator();
         }
     }
 
@@ -192,12 +193,12 @@ int naturalFromRationalExpression(std::unique_ptr<Expressions::Expression> &expr
 expr_ptr stringReplicateFn(expression_vector args, scope_ptr scope)
 {
     Functions::arg_count_check(args, 2);
-    int times = naturalFromRationalExpression(args[0]);
+    boost::multiprecision::cpp_int times = naturalFromRationalExpression(args[0]);
 
     if (auto str = dynamic_cast<Expressions::StringExpression *>(args[1].get()))
     {
         std::string rtn;
-        for (int i = 0; i < times; ++i)
+        for (boost::multiprecision::cpp_int i = 0; i < times; ++i)
         {
             rtn += str->str;
         }
@@ -214,14 +215,14 @@ expr_ptr substringFn(expression_vector args, const scope_ptr &/* scope */)
     if (args.size() > 3) throw std::invalid_argument("Expected 3 arguments, found " + std::to_string(args.size()));
 
     bool threeArgSubstr = args.size() == 3;
-    int x = naturalFromRationalExpression(args[1]);
-    int y = 0;
+    boost::multiprecision::cpp_int x = naturalFromRationalExpression(args[1]);
+    boost::multiprecision::cpp_int y = 0;
     if (threeArgSubstr) y = naturalFromRationalExpression(args[2]);
 
     if (auto str = dynamic_cast<Expressions::StringExpression *>(args[0].get()))
     {
-        if (threeArgSubstr) str->str = str->str.substr(x, y);
-        else str->str = str->str.substr(x);
+        if (threeArgSubstr) str->str = str->str.substr(x.convert_to<int>(), y.convert_to<int>());
+        else str->str = str->str.substr(x.convert_to<int>());
 
         return std::move(args[0]);
     }

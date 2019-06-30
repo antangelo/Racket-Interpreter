@@ -116,9 +116,9 @@ namespace Expressions
 
     std::string NumericalValueExpression::toString() const
     {
-        if (mValue.denominator() == 1) return std::to_string(mValue.numerator());
+        if (value.denominator() == 1) return value.numerator().str();
 
-        return std::to_string(mValue.numerator()) + "/" + std::to_string(mValue.denominator());
+        return value.numerator().str() + "/" + value.denominator().str();
     }
 
     std::unique_ptr<Expression> NumericalValueExpression::clone()
@@ -140,7 +140,7 @@ namespace Expressions
 
     std::string InexactNumberExpression::toString() const
     {
-        return std::to_string(this->value);
+        return this->value.str();
     }
 
     std::unique_ptr<Expression> InexactNumberExpression::clone()

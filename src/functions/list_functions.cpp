@@ -4,6 +4,7 @@
 
 #include "functions.h"
 #include "../interpret/interpret.h"
+#include "boost/multiprecision/cpp_int.hpp"
 
 namespace Interpreter
 {
@@ -397,13 +398,13 @@ namespace ListFunctions
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
-            if (rational->mValue.denominator() == 1)
+            if (rational->value.denominator() == 1)
             {
                 if (auto func = dynamic_cast<Expressions::FunctionExpression *>(args[1].get()))
                 {
                     std::list<expr_ptr> list;
 
-                    for (int i = 0; i < rational->mValue.numerator(); ++i)
+                    for (boost::multiprecision::cpp_int i = 0; i < rational->value.numerator(); ++i)
                     {
                         expression_vector params;
                         params.push_back(std::make_unique<Expressions::NumericalValueExpression>(
