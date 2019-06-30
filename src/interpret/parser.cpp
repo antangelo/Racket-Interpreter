@@ -201,8 +201,7 @@ namespace Parser
 
     bool isNumber(const std::string &str)
     {
-        return isdigit(str[0]) || ((str[0] == '-' || str[0] == '\'') && isdigit(str[1]))
-               || (str[0] == '\'' && str[1] == '-' && isdigit(str[2]));
+        return !str.empty() && str.find_first_not_of("-./0123456789") == std::string::npos;
     }
 
     std::unique_ptr<Expressions::Expression> parse(std::string str, const std::shared_ptr<Expressions::Scope> &scope)
@@ -250,7 +249,7 @@ namespace Parser
             return std::unique_ptr<Expressions::Expression>(
                     new Expressions::BooleanValueExpression(false, std::move(localScope)));
         }
-        else if (isNumber(str))
+        else if (isNumber(str) || (str[0] == '\'' && isNumber(str.substr(1))))
         {
             if (str[0] == '\'') str = str.substr(1);
 
