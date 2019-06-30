@@ -155,7 +155,7 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
         if (expr.size() == 1)
         {
             return std::unique_ptr<Expressions::Expression>
-                    (new Expressions::NumericalValueExpression(1 / first->value,
+                    (new Expressions::NumericalValueExpression(quotient / first->value,
                                                                std::make_unique<Expressions::Scope>(
                                                                        Expressions::Scope(std::move(scope)))));
         }
@@ -167,7 +167,7 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
         if (expr.size() == 1)
         {
             return std::unique_ptr<Expressions::Expression>
-                    (new Expressions::InexactNumberExpression(1 / dFirst->value,
+                    (new Expressions::InexactNumberExpression(dQuot / dFirst->value,
                                                               std::make_unique<Expressions::Scope>(
                                                                       Expressions::Scope(std::move(scope)))));
         }
@@ -195,8 +195,9 @@ expr_ptr div_func(expression_vector expr, scope_ptr scope)
     if (returnFloating)
     {
         return std::make_unique<Expressions::InexactNumberExpression>
-                (Expressions::InexactNumberExpression(dQuot * boost::rational_cast<double>(quotient),
-                                                      std::move(scope)));
+                (Expressions::InexactNumberExpression(
+                        dQuot * boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(quotient),
+                        std::move(scope)));
     }
 
     return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
@@ -246,7 +247,7 @@ expr_ptr funcExpt(expression_vector args, scope_ptr scope)
 {
     Functions::arg_count_check(args, 2);
 
-    boost::multiprecision::cpp_dec_float_50 base, exponent, result;
+    Expressions::InexactNumberExpression::numerical_type base, exponent, result;
     bool exactBase = false, exactExp = false;
 
     if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))

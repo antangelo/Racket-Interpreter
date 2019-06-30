@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <regex>
 
 #include "parser.h"
 #include "../functions/functions.h"
@@ -201,7 +202,8 @@ namespace Parser
 
     bool isNumber(const std::string &str)
     {
-        return !str.empty() && str.find_first_not_of("-./0123456789") == std::string::npos;
+        std::regex numberRegex("-?[0-9]+[./]?([0-9]*)?");
+        return !str.empty() && std::regex_match(str, numberRegex);
     }
 
     std::unique_ptr<Expressions::Expression> parse(std::string str, const std::shared_ptr<Expressions::Scope> &scope)

@@ -367,7 +367,7 @@ namespace Expressions
             this->value = numerical_type(boost::multiprecision::cpp_int(value), denominator);
         }
 
-        explicit NumericalValueExpression(boost::multiprecision::cpp_dec_float_50 value, std::shared_ptr<Scope> scope)
+        explicit NumericalValueExpression(boost::multiprecision::cpp_dec_float_100 value, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
             boost::multiprecision::cpp_int denominator = 1;
@@ -392,7 +392,7 @@ namespace Expressions
     class InexactNumberExpression : public Expression
     {
     public:
-        typedef boost::multiprecision::cpp_dec_float_50 numerical_type;
+        typedef boost::multiprecision::cpp_dec_float_100 numerical_type;
 
         numerical_type value;
 
