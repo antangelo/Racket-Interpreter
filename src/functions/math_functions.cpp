@@ -607,6 +607,26 @@ expr_ptr integerPredicate(expression_vector args, scope_ptr scope)
                 (Expressions::BooleanValueExpression(false, std::move(scope)));
 }
 
+expr_ptr sineFn(expression_vector args, scope_ptr scope)
+{
+    Functions::arg_count_check(args, 1);
+
+    if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
+    {
+        return std::make_unique<Expressions::InexactNumberExpression>(
+                Expressions::InexactNumberExpression(boost::multiprecision::sin(
+                        boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(rational->value)),
+                                                     std::move(scope)));
+    }
+    else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
+    {
+        inexact->value = boost::multiprecision::sin(inexact->value);
+
+        return std::move(args[0]);
+    }
+    else throw std::invalid_argument("Expected number, found " + args[0]->toString());
+}
+
 void register_math_functions()
 {
     Functions::funcMap["+"] = plus_func;
@@ -629,5 +649,6 @@ void register_math_functions()
     Functions::funcMap["add1"] = addOneFn;
     Functions::funcMap["sub1"] = subOneFn;
     Functions::funcMap["integer?"] = integerPredicate;
+    Functions::funcMap["sin"] = sineFn;
 }
 

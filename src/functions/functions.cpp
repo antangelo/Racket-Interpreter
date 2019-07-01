@@ -184,6 +184,19 @@ namespace Functions
                 (args[0]->toString() == args[1]->toString(), std::move(scope));
     }
 
+    std::unique_ptr<Expressions::Expression> error(const expression_vector &args,
+                                                   const std::shared_ptr<Expressions::Scope> &/* scope */)
+    {
+        throw std::invalid_argument("Error: " + args[0]->toString());
+    }
+
+    std::unique_ptr<Expressions::Expression> identity(expression_vector args,
+                                                      const std::shared_ptr<Expressions::Scope> &/* scope */)
+    {
+        arg_count_check(args, 1);
+        return std::move(args[0]);
+    }
+
     void registerFunctions()
     {
         specialFormMap["define"] = define_form;
@@ -202,6 +215,8 @@ namespace Functions
         funcMap["begin"] = begin_func;
         funcMap["procedure?"] = procedurePredicate;
         funcMap["equal?"] = equalComparator;
+        funcMap["error"] = error;
+        funcMap["identity"] = identity;
     }
 
     std::unique_ptr<Expressions::Expression>

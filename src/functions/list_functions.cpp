@@ -11,6 +11,9 @@ namespace Interpreter
     void print(Expressions::expression_vector &steps);
 }
 
+std::unique_ptr<Expressions::Expression>
+funcMin(Expressions::expression_vector args, std::shared_ptr<Expressions::Scope> scope);
+
 namespace ListFunctions
 {
     typedef std::unique_ptr<Expressions::Expression> expr_ptr;
@@ -77,6 +80,28 @@ namespace ListFunctions
 
         if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
         {
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            list->list.pop_front();
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            list->list.pop_front();
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            return std::move(list->list.front());
+        }
+        else throw std::invalid_argument("Expected list, found " + args[0]->toString());
+    }
+
+    expr_ptr fourthFn(expression_vector args, const scope_ptr & /* scope */)
+    {
+        Functions::arg_count_check(args, 1);
+
+        if (auto list = dynamic_cast<Expressions::ListExpression *>(args[0].get()))
+        {
+            if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
+
+            list->list.pop_front();
             if (list->list.empty()) throw std::invalid_argument("Expected non-empty list, given " + list->toString());
 
             list->list.pop_front();
@@ -421,6 +446,74 @@ namespace ListFunctions
 
         throw std::invalid_argument("Expected natural number, found " + args[0]->toString());
     }
+
+    bool n2Smaller(const expr_ptr &number1, const expr_ptr &number2)
+    {
+        Expressions::InexactNumberExpression::numerical_type n1Val, n2Val;
+
+        if (auto n1Rational = dynamic_cast<Expressions::NumericalValueExpression *>(number1.get()))
+        {
+            n1Val = boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(n1Rational->value);
+        }
+        else if (auto n1Inexact = dynamic_cast<Expressions::InexactNumberExpression *>(number1.get()))
+        {
+            n1Val = n1Inexact->value;
+        }
+        else throw std::invalid_argument("Expected number, found " + number1->toString());
+
+        if (auto n2Rational = dynamic_cast<Expressions::NumericalValueExpression *>(number2.get()))
+        {
+            n2Val = boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(n2Rational->value);
+        }
+        else if (auto n2Inexact = dynamic_cast<Expressions::InexactNumberExpression *>(number2.get()))
+        {
+            n2Val = n2Inexact->value;
+        }
+        else throw std::invalid_argument("Expected number, found " + number2->toString());
+
+        return n1Val > n2Val;
+    }
+
+    expr_ptr argminFn(expression_vector args, const scope_ptr & /* scope */)
+    {
+        Functions::arg_count_check(args, 2);
+
+        if (auto func = dynamic_cast<Expressions::FunctionExpression *>(args[0].get()))
+        {
+            if (auto list = dynamic_cast<Expressions::ListExpression *>(args[1].get()))
+            {
+                std::unique_ptr<Expressions::Expression> min = nullptr;
+                std::unique_ptr<Expressions::Expression> minNumber = nullptr;
+
+                for (auto &expr : list->list)
+                {
+                    if (!min)
+                    {
+                        Expressions::expression_vector fnArgs;
+                        fnArgs.push_back(expr->clone());
+                        minNumber = Interpreter::interpret(func->call(std::move(fnArgs)));
+                        min = std::move(expr);
+                    }
+                    else
+                    {
+                        Expressions::expression_vector fnArgs;
+                        fnArgs.push_back(expr->clone());
+                        auto newNumber = Interpreter::interpret(func->call(std::move(fnArgs)));
+
+                        if (n2Smaller(minNumber, newNumber))
+                        {
+                            min = std::move(expr);
+                            minNumber = std::move(newNumber);
+                        }
+                    }
+                }
+
+                return std::move(min);
+            }
+            else throw std::invalid_argument("Expected list, found " + args[1]->toString());
+        }
+        else throw std::invalid_argument("Expected function, found " + args[0]->toString());
+    }
 }
 
 void register_list_functions()
@@ -430,6 +523,7 @@ void register_list_functions()
     Functions::funcMap["first"] = ListFunctions::firstFn;
     Functions::funcMap["second"] = ListFunctions::secondFn;
     Functions::funcMap["third"] = ListFunctions::thirdFn;
+    Functions::funcMap["fourth"] = ListFunctions::fourthFn;
     Functions::funcMap["rest"] = ListFunctions::restFn;
     Functions::funcMap["empty?"] = ListFunctions::emptyPredicateFn;
     Functions::funcMap["cons?"] = ListFunctions::consPredicateFn;
@@ -444,4 +538,5 @@ void register_list_functions()
     Functions::funcMap["sort"] = ListFunctions::sortFn;
     Functions::funcMap["map"] = ListFunctions::mapFn;
     Functions::funcMap["build-list"] = ListFunctions::buildList;
+    Functions::funcMap["argmin"] = ListFunctions::argminFn;
 }
