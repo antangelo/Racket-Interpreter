@@ -3,7 +3,19 @@ project(Racket_Interpreter)
 
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(Boost 1.57.0 COMPONENTS system filesystem program_options REQUIRED)
+find_package(Boost 1.57.0 COMPONENTS system filesystem program_options thread REQUIRED)
+
+if (APPLE)
+
+    LINK_DIRECTORIES(/usr/local/lib)
+
+endif ()
+
+find_library(GMP NAMES libgmp.dylib REQUIRED)
+
+if(GMP)
+    message(STATUS "GMP: ${GMP}")
+endif ()
 
 if (Boost_FOUND)
 
@@ -25,8 +37,5 @@ add_executable(racquet src/main.cpp src/interpret/parser.cpp src/interpret/parse
         src/expressions/struct_expression.cpp src/expressions/struct_expression.h src/expressions/list_expression.cpp
         src/functions/list_functions.cpp)
 
-if (Boost_FOUND)
 
-    target_link_libraries(racquet ${Boost_LIBRARIES})
-
-endif ()
+target_link_libraries(racquet ${Boost_LIBRARIES} ${GMP})

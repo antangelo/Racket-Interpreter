@@ -116,9 +116,9 @@ namespace Expressions
 
     std::string NumericalValueExpression::toString() const
     {
-        if (value.denominator() == 1) return value.numerator().str();
+        if (boost::multiprecision::denominator(value) == 1) return boost::multiprecision::numerator(value).str();
 
-        return value.numerator().str() + "/" + value.denominator().str();
+        return boost::multiprecision::numerator(value).str() + "/" + boost::multiprecision::denominator(value).str();
     }
 
     std::unique_ptr<Expression> NumericalValueExpression::clone()

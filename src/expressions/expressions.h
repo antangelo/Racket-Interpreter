@@ -14,8 +14,7 @@
 #include <map>
 
 #include "boost/rational.hpp"
-#include "boost/multiprecision/cpp_int.hpp"
-#include "boost/multiprecision/cpp_dec_float.hpp"
+#include "boost/multiprecision/gmp.hpp"
 
 namespace Expressions
 {
@@ -279,7 +278,7 @@ namespace Expressions
     class NumericalValueExpression : public Expression
     {
     public:
-        typedef boost::rational<boost::multiprecision::cpp_int> numerical_type;
+        typedef boost::multiprecision::mpq_rational numerical_type;
 
         numerical_type value;
 
@@ -294,59 +293,17 @@ namespace Expressions
         explicit NumericalValueExpression(const std::string &str, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
-            if (str.find('/') != std::string::npos)
-            {
-                bool slashPassed = false;
-                boost::multiprecision::cpp_int numerator = 0, denominator = 0;
-                for (int i = 0; i < str.length(); ++i)
-                {
-                    if (str[i] == '/' && !slashPassed)
-                    {
-                        slashPassed = true;
-                    }
-                    else if (str[i] == '/') throw std::invalid_argument("Parsing Error on " + str);
-                    else if (isdigit(str[i]))
-                    {
-                        if (slashPassed)
-                        {
-                            denominator *= 10;
-                            denominator += str[i] - '0';
-                        }
-                        else
-                        {
-                            numerator *= 10;
-                            numerator += str[i] - '0';
-                        }
-                    }
-                }
-
-                value = numerical_type(numerator, denominator);
-            }
-            else
-            {
-                using namespace boost::multiprecision;
-                cpp_dec_float_50 decimal(str);
-
-                int denominator = 1;
-
-                while (decimal - cpp_dec_float_50(cpp_int(decimal)) != 0)
-                {
-                    decimal *= 10;
-                    denominator *= 10;
-                }
-
-                value = numerical_type(cpp_int(decimal), denominator);
-            }
+            this->value = numerical_type(str);
         }
 
-        explicit NumericalValueExpression(numerical_type value, std::shared_ptr<Scope> scope)
+        NumericalValueExpression(numerical_type value, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
             this->value = std::move(value);
         }
 
-        explicit NumericalValueExpression(const boost::multiprecision::cpp_int &numerator,
-                                          const boost::multiprecision::cpp_int &denominator,
+        explicit NumericalValueExpression(const boost::multiprecision::mpz_int &numerator,
+                                          const boost::multiprecision::mpz_int &denominator,
                                           std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
@@ -356,7 +313,7 @@ namespace Expressions
         explicit NumericalValueExpression(double value, std::shared_ptr<Scope> scope)
                 : Expression(std::move(scope), "NumericalValueExpression")
         {
-            boost::multiprecision::cpp_int denominator = 1;
+            boost::multiprecision::mpz_int denominator = 1;
 
             while (value - (int) value != 0)
             {
@@ -364,21 +321,7 @@ namespace Expressions
                 denominator *= 10;
             }
 
-            this->value = numerical_type(boost::multiprecision::cpp_int(value), denominator);
-        }
-
-        explicit NumericalValueExpression(boost::multiprecision::cpp_dec_float_100 value, std::shared_ptr<Scope> scope)
-                : Expression(std::move(scope), "NumericalValueExpression")
-        {
-            boost::multiprecision::cpp_int denominator = 1;
-
-            while (value - boost::multiprecision::floor(value) != 0)
-            {
-                value *= 10;
-                denominator *= 10;
-            }
-
-            this->value = numerical_type(boost::multiprecision::cpp_int(value), denominator);
+            this->value = numerical_type(boost::multiprecision::mpz_int(value), denominator);
         }
 
     private:
@@ -392,7 +335,7 @@ namespace Expressions
     class InexactNumberExpression : public Expression
     {
     public:
-        typedef boost::multiprecision::cpp_dec_float_100 numerical_type;
+        typedef boost::multiprecision::mpf_float numerical_type;
 
         numerical_type value;
 

@@ -3,7 +3,7 @@
 //
 
 #include "functions.h"
-#include "boost/multiprecision/cpp_int.hpp"
+#include "boost/multiprecision/gmp.hpp"
 
 namespace StringFunctions
 {
@@ -93,11 +93,11 @@ namespace StringFunctions
         if (auto arg = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
             Expressions::NumericalValueExpression::numerical_type num = arg->value;
-            if (num.denominator() != 1)
+            if (boost::multiprecision::denominator(num) != 1)
                 throw std::invalid_argument("Expected rational, found " + args[0]->toString());
 
             std::string str;
-            str += (char) num.numerator();
+            str += (char) boost::multiprecision::numerator(num);
 
             return std::make_unique<Expressions::StringExpression>
                     (Expressions::StringExpression(str, std::move(scope)));
@@ -164,13 +164,13 @@ namespace StringFunctions
                         std::move(scope)));
     }
 
-    boost::multiprecision::cpp_int naturalFromRationalExpression(std::unique_ptr<Expressions::Expression> &expr)
+    boost::multiprecision::mpz_int naturalFromRationalExpression(std::unique_ptr<Expressions::Expression> &expr)
     {
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(expr.get()))
         {
-            if (rational->value.denominator() == 1)
+            if (boost::multiprecision::denominator(rational->value) == 1)
             {
-                return rational->value.numerator();
+                return boost::multiprecision::numerator(rational->value);
             }
         }
 
@@ -180,12 +180,12 @@ namespace StringFunctions
     expr_ptr stringReplicateFn(expression_vector args, scope_ptr scope)
     {
         Functions::arg_count_check(args, 2);
-        boost::multiprecision::cpp_int times = naturalFromRationalExpression(args[0]);
+        boost::multiprecision::mpz_int times = naturalFromRationalExpression(args[0]);
 
         if (auto str = dynamic_cast<Expressions::StringExpression *>(args[1].get()))
         {
             std::string rtn;
-            for (boost::multiprecision::cpp_int i = 0; i < times; ++i)
+            for (boost::multiprecision::mpz_int i = 0; i < times; ++i)
             {
                 rtn += str->str;
             }
@@ -202,8 +202,8 @@ namespace StringFunctions
         if (args.size() > 3) throw std::invalid_argument("Expected 3 arguments, found " + std::to_string(args.size()));
 
         bool threeArgSubstr = args.size() == 3;
-        boost::multiprecision::cpp_int x = naturalFromRationalExpression(args[1]);
-        boost::multiprecision::cpp_int y = 0;
+        boost::multiprecision::mpz_int x = naturalFromRationalExpression(args[1]);
+        boost::multiprecision::mpz_int y = 0;
         if (threeArgSubstr) y = naturalFromRationalExpression(args[2]);
 
         if (auto str = dynamic_cast<Expressions::StringExpression *>(args[0].get()))

@@ -3,7 +3,6 @@
 //
 
 #include <list>
-#include "boost/multiprecision/cpp_dec_float.hpp"
 #include "functions.h"
 #include "../interpret/interpret.h"
 
@@ -12,7 +11,7 @@ namespace TestingFunctions
     struct TestCase
     {
         std::unique_ptr<Expressions::Expression> test, expected;
-        boost::multiprecision::cpp_dec_float_100 within;
+        Expressions::InexactNumberExpression::numerical_type within;
     };
 
     std::list<TestCase> testCases;
@@ -38,7 +37,7 @@ namespace TestingFunctions
         Expressions::InexactNumberExpression::numerical_type within;
 
         if (auto r1 = dynamic_cast<Expressions::NumericalValueExpression *>(expr[2].get()))
-            within = boost::rational_cast<boost::multiprecision::cpp_dec_float_100>(r1->value);
+            within = Expressions::InexactNumberExpression::numerical_type(r1->value);
         else if (auto i1 = dynamic_cast<Expressions::InexactNumberExpression *>(expr[2].get()))
             within = i1->value;
         else throw std::invalid_argument("Expected number, got " + expr[2]->toString());
@@ -58,13 +57,13 @@ namespace TestingFunctions
         Expressions::InexactNumberExpression::numerical_type n1, n2;
 
         if (auto r1 = dynamic_cast<Expressions::NumericalValueExpression *>(test.get()))
-            n1 = boost::rational_cast<boost::multiprecision::cpp_dec_float_100>(r1->value);
+            n1 = Expressions::InexactNumberExpression::numerical_type(r1->value);
         else if (auto i1 = dynamic_cast<Expressions::InexactNumberExpression *>(test.get()))
             n1 = i1->value;
         else throw std::invalid_argument("Expected number, got " + test->toString());
 
         if (auto r2 = dynamic_cast<Expressions::NumericalValueExpression *>(expected.get()))
-            n2 = boost::rational_cast<boost::multiprecision::cpp_dec_float_100>(r2->value);
+            n2 = Expressions::InexactNumberExpression::numerical_type(r2->value);
         else if (auto i2 = dynamic_cast<Expressions::InexactNumberExpression *>(expected.get()))
             n2 = i2->value;
         else throw std::invalid_argument("Expected number, got " + expected->toString());

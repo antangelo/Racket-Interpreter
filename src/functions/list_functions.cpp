@@ -4,7 +4,7 @@
 
 #include "functions.h"
 #include "../interpret/interpret.h"
-#include "boost/multiprecision/cpp_int.hpp"
+#include "boost/multiprecision/gmp.hpp"
 
 namespace Interpreter
 {
@@ -423,17 +423,17 @@ namespace ListFunctions
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
-            if (rational->value.denominator() == 1)
+            if (boost::multiprecision::denominator(rational->value) == 1)
             {
                 if (auto func = dynamic_cast<Expressions::FunctionExpression *>(args[1].get()))
                 {
                     std::list<expr_ptr> list;
 
-                    for (boost::multiprecision::cpp_int i = 0; i < rational->value.numerator(); ++i)
+                    for (boost::multiprecision::mpz_int i = 0; i < boost::multiprecision::numerator(rational->value); ++i)
                     {
                         expression_vector params;
                         params.push_back(std::make_unique<Expressions::NumericalValueExpression>(
-                                Expressions::NumericalValueExpression(i, scope)));
+                                Expressions::NumericalValueExpression(i, 1, scope)));
                         list.push_back(Interpreter::interpret(func->call(std::move(params))));
                     }
 
@@ -453,7 +453,7 @@ namespace ListFunctions
 
         if (auto n1Rational = dynamic_cast<Expressions::NumericalValueExpression *>(number1.get()))
         {
-            n1Val = boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(n1Rational->value);
+            n1Val = Expressions::InexactNumberExpression::numerical_type(n1Rational->value);
         }
         else if (auto n1Inexact = dynamic_cast<Expressions::InexactNumberExpression *>(number1.get()))
         {
@@ -463,7 +463,7 @@ namespace ListFunctions
 
         if (auto n2Rational = dynamic_cast<Expressions::NumericalValueExpression *>(number2.get()))
         {
-            n2Val = boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(n2Rational->value);
+            n2Val = Expressions::InexactNumberExpression::numerical_type(n2Rational->value);
         }
         else if (auto n2Inexact = dynamic_cast<Expressions::InexactNumberExpression *>(number2.get()))
         {

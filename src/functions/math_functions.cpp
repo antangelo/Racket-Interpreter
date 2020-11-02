@@ -6,6 +6,8 @@
 #include "../interpret/parser.h"
 #include <cmath>
 
+#include "boost/multiprecision/gmp.hpp"
+
 namespace MathFunctions
 {
 
@@ -35,8 +37,12 @@ namespace MathFunctions
 
         if (returnFloating)
         {
+            auto numerator = boost::multiprecision::numerator(sum);
+            auto denominator = boost::multiprecision::denominator(sum);
+            auto inexactSum = Expressions::InexactNumberExpression::numerical_type(numerator);
+            inexactSum /= Expressions::InexactNumberExpression::numerical_type(denominator);
             return std::make_unique<Expressions::InexactNumberExpression>
-                    (Expressions::InexactNumberExpression(dSum + boost::rational_cast<double>(sum),
+                    (Expressions::InexactNumberExpression(inexactSum + dSum,
                                                           std::move(scope)));
         }
 
@@ -99,8 +105,12 @@ namespace MathFunctions
 
         if (returnFloating)
         {
+            auto numerator = boost::multiprecision::numerator(diff);
+            auto denominator = boost::multiprecision::denominator(diff);
+            auto inexactSum = Expressions::InexactNumberExpression::numerical_type(numerator);
+            inexactSum /= Expressions::InexactNumberExpression::numerical_type(denominator);
             return std::make_unique<Expressions::InexactNumberExpression>
-                    (Expressions::InexactNumberExpression(dDiff + boost::rational_cast<double>(diff),
+                    (Expressions::InexactNumberExpression(inexactSum + dDiff,
                                                           std::move(scope)));
         }
 
@@ -133,8 +143,12 @@ namespace MathFunctions
 
         if (returnFloating)
         {
+            auto numerator = boost::multiprecision::numerator(product);
+            auto denominator = boost::multiprecision::denominator(product);
+            auto inexactSum = Expressions::InexactNumberExpression::numerical_type(numerator);
+            inexactSum /= Expressions::InexactNumberExpression::numerical_type(denominator);
             return std::make_unique<Expressions::InexactNumberExpression>
-                    (Expressions::InexactNumberExpression(dProd * boost::rational_cast<double>(product),
+                    (Expressions::InexactNumberExpression(inexactSum * dProd,
                                                           std::move(scope)));
         }
 
@@ -197,11 +211,13 @@ namespace MathFunctions
 
         if (returnFloating)
         {
+            auto numerator = boost::multiprecision::numerator(quotient);
+            auto denominator = boost::multiprecision::denominator(quotient);
+            auto inexactQuot = Expressions::InexactNumberExpression::numerical_type(numerator);
+            inexactQuot /= Expressions::InexactNumberExpression::numerical_type(denominator);
             return std::make_unique<Expressions::InexactNumberExpression>
-                    (Expressions::InexactNumberExpression(
-                            dQuot *
-                            boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(quotient),
-                            std::move(scope)));
+                    (Expressions::InexactNumberExpression(inexactQuot * dQuot,
+                                                          std::move(scope)));
         }
 
         return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
@@ -216,7 +232,7 @@ namespace MathFunctions
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args.front().get()))
         {
-            result = sqrt(boost::rational_cast<double>(rational->value));
+            result = sqrt(Expressions::InexactNumberExpression::numerical_type(rational->value));
         }
         else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args.front().get()))
         {
@@ -252,12 +268,12 @@ namespace MathFunctions
         Functions::arg_count_check(args, 2);
 
         Expressions::InexactNumberExpression::numerical_type base, exponent, result;
-        bool exactBase = false, exactExp = false;
+        bool exact = false;
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
-            base = boost::rational_cast<boost::multiprecision::cpp_dec_float_50>(rational->value);
-            exactBase = true;
+            base = Expressions::InexactNumberExpression::numerical_type(rational->value);
+            exact = true;
         }
         else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
         {
@@ -267,21 +283,22 @@ namespace MathFunctions
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[1].get()))
         {
-            exponent = boost::rational_cast<boost::multiprecision::cpp_dec_float_50>(rational->value);
-            exactExp = true;
+            exponent = Expressions::InexactNumberExpression::numerical_type(rational->value);
         }
         else if (auto db = dynamic_cast<Expressions::InexactNumberExpression *>(args[1].get()))
         {
             exponent = db->value;
+            exact = false;
         }
         else throw std::invalid_argument("sqrt expected number, found " + args[1]->toString());
 
         result = boost::multiprecision::pow(base, exponent);
 
-        if (exactBase && exactExp)
+        if (exact)
         {
-            return std::unique_ptr<Expressions::Expression>(new Expressions::NumericalValueExpression
-                                                                    (result, std::move(scope)));
+            auto x = boost::multiprecision::mpz_int(result);
+            return std::make_unique<Expressions::NumericalValueExpression>
+                (x, boost::multiprecision::mpz_int("1"), std::move(scope));
         }
         else
         {
@@ -330,7 +347,7 @@ namespace MathFunctions
         // If we came across an inexact number, then firstInexact is false
         if (!firstInexact)
         {
-            auto rationalM = boost::rational_cast<double>(rationalMax);
+            auto rationalM = Expressions::InexactNumberExpression::numerical_type(rationalMax);
             return std::make_unique<Expressions::InexactNumberExpression>
                     (Expressions::InexactNumberExpression(
                             (rationalM > inexactMax && !firstRational) ? rationalM : inexactMax,
@@ -382,7 +399,7 @@ namespace MathFunctions
         // If we came across an inexact number, then firstInexact is false
         if (!firstInexact)
         {
-            auto rationalM = boost::rational_cast<double>(rationalMax);
+            auto rationalM = Expressions::InexactNumberExpression::numerical_type(rationalMax);
             return std::make_unique<Expressions::InexactNumberExpression>
                     (Expressions::InexactNumberExpression(
                             (rationalM < inexactMax && !firstRational) ? rationalM : inexactMax,
@@ -420,9 +437,11 @@ namespace MathFunctions
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
             Expressions::NumericalValueExpression::numerical_type val = rational->value;
-            boost::multiprecision::cpp_int modulo = val.numerator() % val.denominator();
+            auto denominator = boost::multiprecision::denominator(val);
+            boost::multiprecision::mpz_int modulo = boost::multiprecision::numerator(val);
+            modulo %= denominator;
 
-            rational->value = val - Expressions::NumericalValueExpression::numerical_type(modulo, val.denominator());
+            rational->value = val - Expressions::NumericalValueExpression::numerical_type(modulo, denominator);
 
             return std::move(args[0]);
         }
@@ -442,11 +461,12 @@ namespace MathFunctions
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
             Expressions::NumericalValueExpression::numerical_type val = rational->value;
-            boost::multiprecision::cpp_int modulo = val.numerator() % val.denominator();
+            auto denominator = boost::multiprecision::denominator(val);
+            boost::multiprecision::mpz_int modulo = boost::multiprecision::numerator(val) % denominator;
 
-            if (modulo != 0) modulo -= val.denominator();
+            if (modulo != 0) modulo -= denominator;
 
-            rational->value = val - Expressions::NumericalValueExpression::numerical_type(modulo, val.denominator());
+            rational->value = val - Expressions::NumericalValueExpression::numerical_type(modulo, denominator);
 
             return std::move(args[0]);
         }
@@ -516,7 +536,8 @@ namespace MathFunctions
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
-            bool result = rational->value.denominator() == 1 ? rational->value.numerator() % 2 != 0 : false;
+            bool result = boost::multiprecision::denominator(rational->value) == 1 ? 
+                boost::multiprecision::numerator(rational->value) % 2 != 0 : false;
 
             return std::make_unique<Expressions::BooleanValueExpression>
                     (Expressions::BooleanValueExpression(result, std::move(scope)));
@@ -538,7 +559,8 @@ namespace MathFunctions
 
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
-            bool result = rational->value.denominator() == 1 ? rational->value.numerator() % 2 == 0 : false;
+            bool result = boost::multiprecision::denominator(rational->value) == 1 ?
+                boost::multiprecision::numerator(rational->value) % 2 == 0 : false;
 
             return std::make_unique<Expressions::BooleanValueExpression>
                     (Expressions::BooleanValueExpression(result, std::move(scope)));
@@ -599,7 +621,8 @@ namespace MathFunctions
         if (auto rational = dynamic_cast<Expressions::NumericalValueExpression *>(args[0].get()))
         {
             return std::make_unique<Expressions::BooleanValueExpression>
-                    (Expressions::BooleanValueExpression(rational->value.denominator() == 1, std::move(scope)));
+                    (Expressions::BooleanValueExpression(boost::multiprecision::denominator(rational->value) == 1,
+                        std::move(scope)));
         }
         else if (auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get()))
         {
@@ -619,7 +642,7 @@ namespace MathFunctions
         {
             return std::make_unique<Expressions::InexactNumberExpression>(
                     Expressions::InexactNumberExpression(boost::multiprecision::sin(
-                            boost::rational_cast<Expressions::InexactNumberExpression::numerical_type>(
+                            Expressions::InexactNumberExpression::numerical_type(
                                     rational->value)),
                                                          std::move(scope)));
         }
@@ -630,6 +653,18 @@ namespace MathFunctions
             return std::move(args[0]);
         }
         else throw std::invalid_argument("Expected number, found " + args[0]->toString());
+    }
+
+    expr_ptr inexactToExactFn(expression_vector args, scope_ptr scope) {
+        Functions::arg_count_check(args, 1);
+
+        if(auto inexact = dynamic_cast<Expressions::InexactNumberExpression *>(args[0].get())) {
+            return std::make_unique<Expressions::NumericalValueExpression>(
+                Expressions::NumericalValueExpression::numerical_type(inexact->value),
+                std::move(scope)
+            );
+        }
+        else throw std::invalid_argument("Expected inexact, found " + args[0]->toString());
     }
 }
 
@@ -656,5 +691,6 @@ void register_math_functions()
     Functions::funcMap["sub1"] = MathFunctions::subOneFn;
     Functions::funcMap["integer?"] = MathFunctions::integerPredicate;
     Functions::funcMap["sin"] = MathFunctions::sineFn;
+    Functions::funcMap["itoe"] = MathFunctions::inexactToExactFn;
 }
 
